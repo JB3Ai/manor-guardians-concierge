@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", Georgia, Cambria, "Times New Roman", serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-obsidian: #121212;
+  --color-charcoal: #1A1A1A;
+  --color-alabaster: #FAF9F6;
+  --color-alabaster-muted: #F1EFEA;
+  --color-gold: #C5A059;
+  --color-gold-hover: #D4B26E;
+  --color-gold-deep: #A6833E;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-padding-top: 5.5rem;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-serif);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Branded Pro-Forma PDF Quote Print Layout */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #121212 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-invoice-surface {
+    background: #ffffff !important;
+    color: #121212 !important;
+    border: 1px solid #d4d0c7 !important;
+    box-shadow: none !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .print-invoice-surface * {
+    color: #121212 !important;
+  }
+
+  .print-gold-accent {
+    color: #8a6a2b !important;
+  }
+}

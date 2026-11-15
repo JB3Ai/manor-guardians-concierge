@@ -1,0 +1,110 @@
+import { useState } from 'react';
+import { Menu, MessageCircle, X } from 'lucide-react';
+import { WHATSAPP_BASE_URL } from '../data/services';
+
+interface NavbarProps {
+  onNavigateSection: (sectionId: string) => void;
+}
+
+const NAV_LINKS = [
+  { label: 'Services', targetId: 'services' },
+  { label: 'Instant Quote & Booking', targetId: 'quote' },
+  { label: 'Client Portal', targetId: 'portal' },
+];
+
+export function Navbar({ onNavigateSection }: NavbarProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLinkClick = (targetId: string) => {
+    setMobileMenuOpen(false);
+    onNavigateSection(targetId);
+  };
+
+  return (
+    <header className="no-print sticky top-0 z-50 bg-[#121212]/95 backdrop-blur-md border-b border-white/10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-8">
+        {/* Zone 1: Single-line Brand Wordmark */}
+        <a
+          href="#top"
+          onClick={(e) => {
+            e.preventDefault();
+            handleLinkClick('top');
+          }}
+          className="font-display text-xl sm:text-2xl font-medium tracking-tight text-[#FAF9F6] whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059] rounded-sm"
+        >
+          The Manor Guardians
+        </a>
+
+        {/* Zone 2: Concise single-line navigation links */}
+        <nav aria-label="Primary navigation" className="hidden lg:flex items-center gap-8">
+          {NAV_LINKS.map((item) => (
+            <a
+              key={item.targetId}
+              href={`#${item.targetId}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick(item.targetId);
+              }}
+              className="text-sm font-medium text-[#FAF9F6]/80 hover:text-[#C5A059] transition-colors duration-200 underline-offset-8 hover:underline whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059] rounded-sm py-1"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        {/* Zone 3: Primary Action + Mobile Drawer Toggle */}
+        <div className="flex items-center gap-3 shrink-0">
+          <a
+            href={WHATSAPP_BASE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center gap-2 bg-[#C5A059] hover:bg-[#D4B26E] text-[#121212] font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-sm transition-colors duration-200 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FAF9F6]"
+          >
+            <MessageCircle className="w-4 h-4 stroke-[2]" aria-hidden="true" />
+            <span>WhatsApp Concierge</span>
+          </a>
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-expanded={mobileMenuOpen}
+            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            className="lg:hidden inline-flex items-center justify-center w-11 h-11 text-[#FAF9F6] hover:text-[#C5A059] border border-white/15 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059]"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-[#121212] border-t border-white/10 px-4 py-5 space-y-2">
+          {NAV_LINKS.map((item) => (
+            <a
+              key={item.targetId}
+              href={`#${item.targetId}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick(item.targetId);
+              }}
+              className="flex items-center min-h-[44px] px-2 text-base font-medium text-[#FAF9F6]/90 hover:text-[#C5A059] border-b border-white/5 transition-colors"
+            >
+              {item.label}
+            </a>
+          ))}
+          <div className="pt-3">
+            <a
+              href={WHATSAPP_BASE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full min-h-[46px] bg-[#C5A059] hover:bg-[#D4B26E] text-[#121212] font-semibold text-sm px-4 py-3 rounded-sm transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 stroke-[2]" aria-hidden="true" />
+              <span>WhatsApp Concierge</span>
+            </a>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
