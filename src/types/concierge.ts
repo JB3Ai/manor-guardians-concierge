@@ -1,16 +1,19 @@
 export type ServiceId =
-  | 'vip-estate-pet-care'
+  | 'core-residence-pet-care'
+  | 'welcome-home-refresh'
+  | 'trusted-chauffeur-day-trips'
+  | 'vetted-family-staff-specialist'
   | 'peak-festive-surcharge'
-  | 'airport-chauffeur'
-  | 'concierge-driving'
-  | 'welcome-home-reset'
-  | 'property-maintenance';
+  | 'pre-arrival-maintenance';
 
 export type BaseCareTier = 'vip-24-7' | 'daily-drop-in';
+export type StayContextMode = 'away-travel' | 'at-home-support';
+export type ConsultationPreference = 'in-home-meet-greet' | 'online-video';
 
 export interface BespokeService {
   id: ServiceId;
   indexNumber: string;
+  categoryLabel: string;
   title: string;
   priceLabel: string;
   billingUnit: string;
@@ -22,13 +25,22 @@ export interface BespokeService {
   quoteActionType:
     | 'base-care'
     | 'festive-info'
-    | 'airport'
-    | 'errands'
-    | 'welcome-reset'
+    | 'chauffeur'
+    | 'welcome-refresh'
+    | 'specialist-staff'
     | 'maintenance';
 }
 
+export interface PretoriaSuburbCoverage {
+  name: string;
+  responseEta: string;
+  highlights: string;
+  mapX: number; // SVG percentage 0-100
+  mapY: number; // SVG percentage 0-100
+}
+
 export interface QuoteInput {
+  stayContext: StayContextMode;
   baseTier: BaseCareTier;
   checkInDate: string;
   checkOutDate: string;
@@ -39,6 +51,9 @@ export interface QuoteInput {
   includePreArrivalMaintenance: boolean;
   errandHours: number;
   errandKilometers: number;
+  selectedDayTrips: string[];
+  requestedSpecialistServices: string[];
+  consultationPreference: ConsultationPreference;
   maintenanceNotes: string;
 }
 
@@ -57,20 +72,21 @@ export interface QuoteBreakdown {
   conciergeDrivingSubtotal: number;
   subtotalBeforePeak: number;
   estimatedTotal: number;
-  depositAmount: number;
-  balanceOnArrival: number;
+  indicativeDepositAmount: number;
+  balanceOnCompletion: number;
   hasFestiveDates: boolean;
+  hasCustomQuotedItems: boolean;
 }
 
 export interface ClientContactDetails {
   fullName: string;
-  suburbOrEstate: string;
+  suburbOrResidence: string;
   whatsappPhone: string;
   email: string;
   specialInstructions: string;
 }
 
-/* ---------- Client Portal: Tab 1 (Estate & Pet Onboarding) ---------- */
+/* ---------- Client Portal: Tab 1 (Residence & Pet Onboarding) ---------- */
 
 export interface PetOnboardingProfile {
   id: string;
@@ -82,8 +98,8 @@ export interface PetOnboardingProfile {
   primaryVetContact: string;
 }
 
-export interface EstateOnboardingDossier {
-  estateNameAndAddress: string;
+export interface ResidenceOnboardingDossier {
+  residenceNameAndAddress: string;
   gateAccessProcedure: string;
   armedResponseCompanyAndPassword: string;
   waterShutoffAndDbLocations: string;
@@ -132,8 +148,8 @@ export interface StayBillingLedger {
   incidentals: IncidentalExpenseItem[];
 }
 
-export interface EstatePortalSession {
-  estateName: string;
+export interface ResidencePortalSession {
+  residenceName: string;
   referenceCode: string;
   datesLabel: string;
   leadGuardian: string;

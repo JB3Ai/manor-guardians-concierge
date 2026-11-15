@@ -6,9 +6,12 @@ import { Navbar } from './components/Navbar';
 import { PromiseTimeline } from './components/PromiseTimeline';
 import { QuoteBookingSection } from './components/QuoteBookingSection';
 import { ServicesGrid } from './components/ServicesGrid';
+import { WhoWeAreSection } from './components/WhoWeAreSection';
+import { PRETORIA_SUBURBS } from './data/services';
 import { BespokeService, QuoteInput } from './types/concierge';
 
 const DEFAULT_QUOTE_INPUT: QuoteInput = {
+  stayContext: 'away-travel',
   baseTier: 'vip-24-7',
   checkInDate: '2026-12-20',
   checkOutDate: '2026-12-28',
@@ -19,11 +22,15 @@ const DEFAULT_QUOTE_INPUT: QuoteInput = {
   includePreArrivalMaintenance: false,
   errandHours: 0,
   errandKilometers: 0,
+  selectedDayTrips: [],
+  requestedSpecialistServices: [],
+  consultationPreference: 'in-home-meet-greet',
   maintenanceNotes: '',
 };
 
 export default function App() {
   const [quoteInput, setQuoteInput] = useState<QuoteInput>(DEFAULT_QUOTE_INPUT);
+  const [selectedSuburb, setSelectedSuburb] = useState<string>(PRETORIA_SUBURBS[0]);
   const startDateInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToSection = (sectionId: string) => {
@@ -33,11 +40,16 @@ export default function App() {
     }
   };
 
-  const handleCalculateHolidayQuote = () => {
+  const handleCalculateQuoteAndConsult = () => {
     scrollToSection('quote');
     window.setTimeout(() => {
       startDateInputRef.current?.focus({ preventScroll: true });
     }, 350);
+  };
+
+  const handleSelectSuburbForQuote = (suburbName: string) => {
+    setSelectedSuburb(suburbName);
+    handleCalculateQuoteAndConsult();
   };
 
   const handleSelectServiceAction = (service: BespokeService) => {
@@ -54,21 +66,25 @@ export default function App() {
             checkInDate: '2026-12-20',
             checkOutDate: '2027-01-02',
           };
-        case 'airport':
+        case 'chauffeur':
           return {
             ...prev,
             airportTrips: prev.airportTrips === 0 ? 2 : prev.airportTrips,
-          };
-        case 'errands':
-          return {
-            ...prev,
             errandHours: prev.errandHours === 0 ? 2 : prev.errandHours,
             errandKilometers: prev.errandKilometers === 0 ? 35 : prev.errandKilometers,
           };
-        case 'welcome-reset':
+        case 'welcome-refresh':
           return {
             ...prev,
             includeWelcomeReset: true,
+          };
+        case 'specialist-staff':
+          return {
+            ...prev,
+            requestedSpecialistServices:
+              prev.requestedSpecialistServices.length === 0
+                ? ['Supervised Additional Cleaners, Gardeners & Domestic Helpers']
+                : prev.requestedSpecialistServices,
           };
         case 'maintenance':
           return {
@@ -80,7 +96,7 @@ export default function App() {
       }
     });
 
-    handleCalculateHolidayQuote();
+    handleCalculateQuoteAndConsult();
   };
 
   return (
@@ -88,11 +104,13 @@ export default function App() {
       <Navbar onNavigateSection={scrollToSection} />
 
       <main className="flex-1">
-        <HeroSection onCalculateQuote={handleCalculateHolidayQuote} />
+        <HeroSection onCalculateQuote={handleCalculateQuoteAndConsult} />
         <ServicesGrid onSelectServiceAction={handleSelectServiceAction} />
+        <WhoWeAreSection onSelectSuburbForQuote={handleSelectSuburbForQuote} />
         <PromiseTimeline />
         <QuoteBookingSection
           quoteInput={quoteInput}
+          selectedSuburb={selectedSuburb}
           onChangeQuoteInput={setQuoteInput}
           startDateInputRef={startDateInputRef}
         />

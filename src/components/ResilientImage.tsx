@@ -27,7 +27,7 @@ export function ResilientImage({
       >
         <Shield className="w-7 h-7 text-[#C5A059] mb-3 stroke-[1.25]" aria-hidden="true" />
         <span className="font-display text-lg text-[#FAF9F6] tracking-wide">
-          {fallbackTitle || 'The Manor Guardians'}
+          {fallbackTitle || 'Pretoria East Home & Pet Concierge'}
         </span>
       </div>
     );

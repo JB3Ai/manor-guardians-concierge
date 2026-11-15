@@ -3,10 +3,10 @@ import {
   CalendarClock,
   Car,
   Check,
-  Navigation,
-  Plane,
+  Home,
   ShieldCheck,
   Sparkles,
+  Users,
   Wrench,
 } from 'lucide-react';
 import { BESPOKE_SERVICES } from '../data/services';
@@ -19,26 +19,26 @@ interface ServicesGridProps {
 
 function getServiceIcon(id: BespokeService['id']) {
   switch (id) {
-    case 'vip-estate-pet-care':
-      return ShieldCheck;
+    case 'core-residence-pet-care':
+      return Home;
+    case 'welcome-home-refresh':
+      return Sparkles;
+    case 'trusted-chauffeur-day-trips':
+      return Car;
+    case 'vetted-family-staff-specialist':
+      return Users;
     case 'peak-festive-surcharge':
       return CalendarClock;
-    case 'airport-chauffeur':
-      return Plane;
-    case 'concierge-driving':
-      return Car;
-    case 'welcome-home-reset':
-      return Sparkles;
-    case 'property-maintenance':
+    case 'pre-arrival-maintenance':
       return Wrench;
     default:
-      return Navigation;
+      return ShieldCheck;
   }
 }
 
 export function ServicesGrid({ onSelectServiceAction }: ServicesGridProps) {
   const featuredServices = BESPOKE_SERVICES.slice(0, 2);
-  const auxiliaryServices = BESPOKE_SERVICES.slice(2);
+  const secondaryServices = BESPOKE_SERVICES.slice(2);
 
   return (
     <section
@@ -59,16 +59,16 @@ export function ServicesGrid({ onSelectServiceAction }: ServicesGridProps) {
                 textWrap: 'balance',
               }}
             >
-              Comprehensive Stewardship for Your Home, Animals &amp; Schedule
+              Residence Care, Pet Companionship, Chauffeur Trips &amp; Vetted Home Staff
             </h2>
           </div>
           <p className="text-sm sm:text-base text-[#121212]/70 max-w-md leading-relaxed">
-            Every engagement is quoted transparently in South African Rand (ZAR) with zero hidden
-            agency levies.
+            Available whether you are traveling or staying home to enjoy December without the
+            household errands, hosting prep, or driving load.
           </p>
         </div>
 
-        {/* Asymmetric Top Pair: Marquee Capabilities with Editorial Photography */}
+        {/* Top Marquee Pair: Core Residence & Pet Care + Welcome Home Refresh */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mt-10">
           {featuredServices.map((service, idx) => {
             const Icon = getServiceIcon(service.id);
@@ -95,13 +95,15 @@ export function ServicesGrid({ onSelectServiceAction }: ServicesGridProps) {
                     <div className="flex items-center justify-between gap-4 mb-4">
                       <div className="flex items-center gap-2.5 text-xs font-medium tracking-wider uppercase text-[#8A6A2B]">
                         <Icon className="w-4 h-4 stroke-[1.75]" aria-hidden="true" />
-                        <span>{service.indexNumber}. Core Concierge</span>
+                        <span>
+                          {service.indexNumber}. {service.categoryLabel}
+                        </span>
                       </div>
                       <div className="text-right tabular-nums">
                         <span className="font-display text-2xl sm:text-3xl font-semibold text-[#121212]">
                           {service.priceLabel}
                         </span>
-                        <span className="text-xs text-[#121212]/60 ml-1.5">
+                        <span className="block text-[11px] text-[#121212]/60">
                           {service.billingUnit}
                         </span>
                       </div>
@@ -146,7 +148,7 @@ export function ServicesGrid({ onSelectServiceAction }: ServicesGridProps) {
 
         {/* Lower 4-Column Architectural Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 lg:mt-8">
-          {auxiliaryServices.map((service) => {
+          {secondaryServices.map((service) => {
             const Icon = getServiceIcon(service.id);
             return (
               <article
@@ -155,10 +157,10 @@ export function ServicesGrid({ onSelectServiceAction }: ServicesGridProps) {
               >
                 <div>
                   <div className="flex items-center justify-between gap-3 mb-4">
-                    <span className="text-xs font-medium tracking-wider uppercase text-[#8A6A2B]">
-                      {service.indexNumber}
+                    <span className="text-[11px] font-medium tracking-wider uppercase text-[#8A6A2B]">
+                      {service.indexNumber} · {service.categoryLabel}
                     </span>
-                    <Icon className="w-4 h-4 text-[#A6833E] stroke-[1.75]" aria-hidden="true" />
+                    <Icon className="w-4 h-4 text-[#A6833E] stroke-[1.75] shrink-0" aria-hidden="true" />
                   </div>
 
                   <h3 className="font-display text-xl sm:text-2xl font-medium text-[#121212] leading-snug mb-2">

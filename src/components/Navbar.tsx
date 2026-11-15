@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Menu, MessageCircle, X } from 'lucide-react';
-import { WHATSAPP_BASE_URL } from '../data/services';
+import { BRAND_NAME, WHATSAPP_BASE_URL } from '../data/services';
 
 interface NavbarProps {
   onNavigateSection: (sectionId: string) => void;
@@ -8,7 +8,8 @@ interface NavbarProps {
 
 const NAV_LINKS = [
   { label: 'Services', targetId: 'services' },
-  { label: 'Instant Quote & Booking', targetId: 'quote' },
+  { label: 'Who We Are', targetId: 'who-we-are' },
+  { label: 'Quote & Consult', targetId: 'quote' },
   { label: 'Client Portal', targetId: 'portal' },
 ];
 
@@ -30,13 +31,13 @@ export function Navbar({ onNavigateSection }: NavbarProps) {
             e.preventDefault();
             handleLinkClick('top');
           }}
-          className="font-display text-xl sm:text-2xl font-medium tracking-tight text-[#FAF9F6] whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059] rounded-sm"
+          className="font-display text-lg sm:text-xl lg:text-2xl font-medium tracking-tight text-[#FAF9F6] whitespace-nowrap shrink-0 truncate max-w-[230px] sm:max-w-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059] rounded-sm"
         >
-          The Manor Guardians
+          {BRAND_NAME}
         </a>
 
         {/* Zone 2: Concise single-line navigation links */}
-        <nav aria-label="Primary navigation" className="hidden lg:flex items-center gap-8">
+        <nav aria-label="Primary navigation" className="hidden lg:flex items-center gap-7">
           {NAV_LINKS.map((item) => (
             <a
               key={item.targetId}

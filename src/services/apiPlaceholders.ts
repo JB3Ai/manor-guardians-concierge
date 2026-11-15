@@ -1,11 +1,11 @@
-import { WHATSAPP_BASE_URL } from '../data/services';
+import { BRAND_NAME, WHATSAPP_BASE_URL } from '../data/services';
 import {
   ClientContactDetails,
-  EstateOnboardingDossier,
   IncidentalExpenseItem,
   PortalDailyUpdate,
   QuoteBreakdown,
   QuoteInput,
+  ResidenceOnboardingDossier,
 } from '../types/concierge';
 
 export interface QuotePayload {
@@ -35,12 +35,13 @@ export interface WhatsAppSummaryResponse {
 
 export interface BookingCalendarPayload {
   referenceCode: string;
-  estateName: string;
+  residenceName: string;
   clientName: string;
   clientEmail: string;
   checkInDate: string;
   checkOutDate: string;
   serviceTierLabel: string;
+  consultationPreferenceLabel: string;
   addOnsSummary: string[];
 }
 
@@ -53,10 +54,10 @@ export interface GoogleCalendarSyncResponse {
   endIso: string;
 }
 
-export interface LockBookingExecutionResult {
+export interface ConsultationRequestResult {
   referenceCode: string;
   submittedAtIso: string;
-  paystack: PaystackDepositLinkResponse;
+  consultationPreferenceLabel: string;
   whatsapp: WhatsAppSummaryResponse;
   calendar: GoogleCalendarSyncResponse;
   contact: ClientContactDetails;
@@ -68,7 +69,7 @@ export interface SupabaseOnboardingSaveResponse {
   saved: boolean;
   dossierId: string;
   savedAtIso: string;
-  targetTable: 'estate_onboarding_dossiers';
+  targetTable: 'residence_onboarding_dossiers';
 }
 
 export interface SupabasePortalUpdateResponse {
@@ -85,15 +86,14 @@ function formatCurrencyZar(amount: number): string {
 }
 
 /**
- * Placeholder API: Generates a Paystack checkout link in ZAR (50% deposit or final invoice settlement).
- * Replace with a server-side POST /api/payments/paystack/initialize call in production.
+ * Placeholder API: Generates a Paystack checkout link in ZAR once a stay is vetted and confirmed.
  */
 export async function createPaystackDepositLink(
   quoteData: QuotePayload
 ): Promise<PaystackDepositLinkResponse> {
   await new Promise((resolve) => setTimeout(resolve, 180));
 
-  const amountZar = quoteData.breakdown.depositAmount;
+  const amountZar = quoteData.breakdown.indicativeDepositAmount;
   const amountCents = Math.round(amountZar * 100);
   const paystackRef = `PSK-${quoteData.referenceCode}`;
 
@@ -109,7 +109,7 @@ export async function createPaystackDepositLink(
 }
 
 /**
- * Placeholder API: Generates a Paystack settlement link for the final invoice (remaining 50% + incidentals).
+ * Placeholder API: Generates a Paystack settlement link for the final stay invoice (remaining 50% + incidentals).
  */
 export async function createPaystackFinalInvoiceLink(
   referenceCode: string,
@@ -132,7 +132,7 @@ export async function createPaystackFinalInvoiceLink(
 }
 
 /**
- * Placeholder API: Dispatches an itemized WhatsApp quote summary and prepares a direct client handoff link.
+ * Placeholder API: Dispatches an itemized WhatsApp quote & free consultation request summary.
  */
 export async function sendWhatsAppQuoteSummary(
   phone: string,
@@ -142,32 +142,52 @@ export async function sendWhatsAppQuoteSummary(
 
   const { referenceCode, quoteInput, breakdown, contact } = quoteData;
 
+  const consultLabel =
+    quoteInput.consultationPreference === 'in-home-meet-greet'
+      ? 'In-Home Meet & Greet (incl. Pet Introduction)'
+      : 'Online Video Consultation';
+
+  const contextLabel =
+    quoteInput.stayContext === 'away-travel'
+      ? 'Traveling Away from Home'
+      : 'At-Home Support (Offloading Chores & Errands)';
+
   const addOns: string[] = [];
   if (quoteInput.airportTrips > 0) {
     addOns.push(`Airport Transfers (${quoteInput.airportTrips} trip(s))`);
   }
   if (quoteInput.includeWelcomeReset) {
-    addOns.push('Welcome Home Reset (R600)');
+    addOns.push('Welcome Home Refresh (R600)');
   }
   if (quoteInput.includePreArrivalMaintenance) {
-    addOns.push('Pre-Arrival Power Wash / Minor Maintenance (R850)');
+    addOns.push('Pre-Arrival Power Wash / Maintenance (R850)');
   }
   if (breakdown.conciergeDrivingSubtotal > 0) {
     addOns.push(
-      `Concierge Errands (${quoteInput.errandHours}h / ${quoteInput.errandKilometers}km)`
+      `Trusted Chauffeur / Errands (${quoteInput.errandHours}h / ${quoteInput.errandKilometers}km)`
+    );
+  }
+  if (quoteInput.selectedDayTrips.length > 0) {
+    addOns.push(`Curated Day Trips: ${quoteInput.selectedDayTrips.join(', ')}`);
+  }
+  if (quoteInput.requestedSpecialistServices.length > 0) {
+    addOns.push(
+      `On-Request Specialist Services: ${quoteInput.requestedSpecialistServices.join(', ')}`
     );
   }
 
   const previewText = [
-    `Hello The Manor Guardians,`,
-    `Please confirm availability for Quote Ref: ${referenceCode}.`,
-    `Client: ${contact.fullName} (${contact.suburbOrEstate})`,
+    `Hello ${BRAND_NAME},`,
+    `I would like to book a Free Vetting Consultation (${referenceCode}).`,
+    `Consultation Preference: ${consultLabel}`,
+    `Name: ${contact.fullName} (${contact.suburbOrResidence})`,
+    `Support Context: ${contextLabel}`,
     `Service Tier: ${breakdown.baseTierLabel}`,
     `Dates: ${quoteInput.checkInDate} to ${quoteInput.checkOutDate} (${breakdown.totalDays} days${breakdown.peakFestiveDays > 0 ? `, incl. ${breakdown.peakFestiveDays} Peak Festive days` : ''})`,
     `Pets: ${quoteInput.petCount} (${quoteInput.petSpeciesSummary || 'Standard care'})`,
-    `Add-Ons: ${addOns.length > 0 ? addOns.join(', ') : 'None'}`,
-    `Total Quote: ${formatCurrencyZar(breakdown.estimatedTotal)}`,
-    `50% Deposit Due to Lock Dates: ${formatCurrencyZar(breakdown.depositAmount)}`,
+    `Selected Add-Ons: ${addOns.length > 0 ? addOns.join(' | ') : 'None'}`,
+    `Estimated ZAR Quote: ${formatCurrencyZar(breakdown.estimatedTotal)}${breakdown.hasCustomQuotedItems ? ' (+ On-Request Items)' : ''}`,
+    `Note: Ready to schedule our free meet-and-greet & pet introduction before locking dates.`,
   ].join('\n');
 
   const whatsappHandoffUrl = `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(previewText)}`;
@@ -182,7 +202,7 @@ export async function sendWhatsAppQuoteSummary(
 }
 
 /**
- * Placeholder API: Creates a tentative estate guardianship hold on the dispatch Google Calendar.
+ * Placeholder API: Logs a tentative consultation & stay window hold on Google Calendar.
  */
 export async function syncBookingToGoogleCalendar(
   bookingData: BookingCalendarPayload
@@ -194,19 +214,18 @@ export async function syncBookingToGoogleCalendar(
   return {
     synced: true,
     eventId,
-    calendarName: 'Pretoria Senior Guardian Dispatch',
-    summary: `[PENDING DEPOSIT] ${bookingData.clientName} · ${bookingData.estateName} (${bookingData.referenceCode})`,
+    calendarName: 'Pretoria East Family Concierge Calendar',
+    summary: `[FREE CONSULTATION · ${bookingData.consultationPreferenceLabel}] ${bookingData.clientName} · ${bookingData.residenceName} (${bookingData.referenceCode})`,
     startIso: `${bookingData.checkInDate}T09:00:00+02:00`,
     endIso: `${bookingData.checkOutDate}T16:00:00+02:00`,
   };
 }
 
 /**
- * Placeholder API (Supabase-ready): Persists client Estate & Pet Onboarding Dossier.
- * Replace with `supabase.from('estate_onboarding_dossiers').upsert(...)` in production.
+ * Placeholder API (Supabase-ready): Persists client Residence & Pet Onboarding Dossier.
  */
-export async function saveEstateOnboardingDossier(
-  dossier: EstateOnboardingDossier
+export async function saveResidenceOnboardingDossier(
+  dossier: ResidenceOnboardingDossier
 ): Promise<SupabaseOnboardingSaveResponse> {
   await new Promise((resolve) => setTimeout(resolve, 200));
   const savedAtIso = new Date().toISOString();
@@ -217,13 +236,12 @@ export async function saveEstateOnboardingDossier(
     saved: true,
     dossierId,
     savedAtIso,
-    targetTable: 'estate_onboarding_dossiers',
+    targetTable: 'residence_onboarding_dossiers',
   };
 }
 
 /**
- * Placeholder API (Supabase-ready): Publishes a new daily timed guardian update from Team Admin View.
- * Replace with `supabase.from('stay_daily_updates').insert(...)` in production.
+ * Placeholder API (Supabase-ready): Publishes a new daily timed update from Team Admin View.
  */
 export async function publishStayDailyUpdate(
   update: PortalDailyUpdate

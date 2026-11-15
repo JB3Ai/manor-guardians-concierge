@@ -11,7 +11,7 @@ import {
   UserCheck,
   Zap,
 } from 'lucide-react';
-import { GUARDIAN_TEAM_MEMBERS } from '../../data/services';
+import { CARE_TEAM_MEMBERS } from '../../data/services';
 import {
   createPaystackFinalInvoiceLink,
   logStayIncidentalExpense,
@@ -20,9 +20,9 @@ import {
 } from '../../services/apiPlaceholders';
 import { formatZar } from '../../services/conciergeApi';
 import {
-  EstateOnboardingDossier,
   IncidentalExpenseItem,
   PortalDailyUpdate,
+  ResidenceOnboardingDossier,
   StayBillingLedger,
 } from '../../types/concierge';
 import { ResilientImage } from '../ResilientImage';
@@ -30,7 +30,7 @@ import { ResilientImage } from '../ResilientImage';
 interface LiveStayUpdatesTabProps {
   referenceCode: string;
   datesLabel: string;
-  dossier: EstateOnboardingDossier;
+  dossier: ResidenceOnboardingDossier;
   updates: PortalDailyUpdate[];
   billing: StayBillingLedger;
   onAddUpdate: (update: PortalDailyUpdate) => void;
@@ -41,7 +41,7 @@ type PortalRoleMode = 'client' | 'team';
 
 const UPDATE_SLOT_PRESETS = [
   '08:00 AM Morning Check-In',
-  '12:30 PM Midday Estate Sweep',
+  '12:30 PM Midday Residence Sweep',
   '05:30 PM Evening Update',
 ];
 
@@ -56,7 +56,7 @@ const SAMPLE_PHOTO_OPTIONS = [
     url: '/src/assets/images/service_estate_pet_care_1794747601774.jpg',
   },
   {
-    label: 'Kitchen & Welcome Reset Prep Photo',
+    label: 'Kitchen & Welcome Refresh Photo',
     url: '/src/assets/images/service_welcome_reset_1794747602927.jpg',
   },
 ];
@@ -72,9 +72,8 @@ export function LiveStayUpdatesTab({
 }: LiveStayUpdatesTabProps) {
   const [roleMode, setRoleMode] = useState<PortalRoleMode>('client');
 
-  // Team Admin: New Update Form State
   const [slotTitle, setSlotTitle] = useState(UPDATE_SLOT_PRESETS[0]);
-  const [guardianName, setGuardianName] = useState(GUARDIAN_TEAM_MEMBERS[0]);
+  const [guardianName, setGuardianName] = useState(CARE_TEAM_MEMBERS[0]);
   const [dogsFedWalked, setDogsFedWalked] = useState(true);
   const [poolAndGarden, setPoolAndGarden] = useState(true);
   const [securityAndPowerOn, setSecurityAndPowerOn] = useState(true);
@@ -82,12 +81,10 @@ export function LiveStayUpdatesTab({
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState(SAMPLE_PHOTO_OPTIONS[1].url);
   const [isPublishingUpdate, setIsPublishingUpdate] = useState(false);
 
-  // Team Admin: New Incidental Form State
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [isLoggingExpense, setIsLoggingExpense] = useState(false);
 
-  // Final Invoice Paystack Settlement State
   const [isSettlingInvoice, setIsSettlingInvoice] = useState(false);
   const [finalSettlement, setFinalSettlement] = useState<PaystackDepositLinkResponse | null>(
     null
@@ -200,12 +197,11 @@ export function LiveStayUpdatesTab({
             <span>{datesLabel}</span>
           </div>
           <h3 className="font-display text-2xl sm:text-3xl font-medium text-[#FAF9F6]">
-            {dossier.estateNameAndAddress}
+            {dossier.residenceNameAndAddress}
           </h3>
           <p className="text-xs sm:text-sm text-[#FAF9F6]/70">{petSummaryText}</p>
         </div>
 
-        {/* Client View vs Team Admin View Switch */}
         <div
           role="group"
           aria-label="Portal perspective switch"
@@ -237,24 +233,21 @@ export function LiveStayUpdatesTab({
         </div>
       </div>
 
-      {/* Main Two-Column Grid: Daily Timed Updates Feed (Left) + Incidentals & Final Bill Ledger (Right) */}
+      {/* Main Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Team Post Composer (Admin Mode) + Daily Timed Updates Feed */}
         <div className="lg:col-span-7 space-y-6">
           {roleMode === 'team' && (
             <form
               onSubmit={handlePostUpdate}
               className="bg-[#1A1A1A] border border-[#C5A059]/45 rounded-sm p-6 space-y-5"
             >
-              <div className="pb-3 border-b border-white/10 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-medium tracking-[0.14em] uppercase text-[#C5A059]">
-                    Team Dispatch Composer
-                  </p>
-                  <h4 className="font-display text-2xl font-medium text-[#FAF9F6]">
-                    Post New Daily Timed Update
-                  </h4>
-                </div>
+              <div className="pb-3 border-b border-white/10">
+                <p className="text-xs font-medium tracking-[0.14em] uppercase text-[#C5A059]">
+                  Team Dispatch Composer
+                </p>
+                <h4 className="font-display text-2xl font-medium text-[#FAF9F6]">
+                  Post New Daily Timed Update
+                </h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -284,7 +277,7 @@ export function LiveStayUpdatesTab({
                     htmlFor="team-guardian"
                     className="block text-xs font-semibold text-[#FAF9F6]/80 mb-1.5"
                   >
-                    Posting Guardian (Team of 3)
+                    Posting Team Member
                   </label>
                   <select
                     id="team-guardian"
@@ -292,7 +285,7 @@ export function LiveStayUpdatesTab({
                     onChange={(e) => setGuardianName(e.target.value)}
                     className="w-full min-h-[44px] px-3 py-2 text-sm bg-[#121212] border border-white/20 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
                   >
-                    {GUARDIAN_TEAM_MEMBERS.map((member) => (
+                    {CARE_TEAM_MEMBERS.map((member) => (
                       <option key={member} value={member}>
                         {member}
                       </option>
@@ -301,10 +294,9 @@ export function LiveStayUpdatesTab({
                 </div>
               </div>
 
-              {/* Status Verification Toggles */}
               <div>
                 <span className="block text-xs font-semibold text-[#FAF9F6]/80 mb-2">
-                  Verified Estate Checks
+                  Verified Home Checks
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <label className="flex items-center gap-2.5 p-3 bg-[#121212] border border-white/15 rounded-sm text-xs cursor-pointer">
@@ -337,7 +329,6 @@ export function LiveStayUpdatesTab({
                 </div>
               </div>
 
-              {/* Photo Attachment */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label
@@ -401,7 +392,7 @@ export function LiveStayUpdatesTab({
                   required
                   value={caretakerNotes}
                   onChange={(e) => setCaretakerNotes(e.target.value)}
-                  placeholder="Log dog appetite, walk duration, pool clarity, solar inverter charge, or delivery updates…"
+                  placeholder="Log dog appetite, playtime, municipal bins, pool clarity, or solar inverter charge…"
                   className="w-full px-3.5 py-2.5 text-sm bg-[#121212] border border-white/20 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
                 />
               </div>
@@ -444,7 +435,6 @@ export function LiveStayUpdatesTab({
                     </div>
                   </div>
 
-                  {/* Clean Unboxed Status Verification Row */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 py-3 border-y border-white/10 text-xs">
                     <div className="flex items-center gap-2">
                       <PawPrint
@@ -533,12 +523,11 @@ export function LiveStayUpdatesTab({
               Incidentals &amp; Final Bill
             </h4>
             <p className="text-xs text-[#FAF9F6]/65 mt-1">
-              Transparent ZAR ledger combining your remaining 50% stay balance and verified
+              Transparent ZAR ledger combining your remaining 50% balance and verified
               out-of-pocket concierge receipts.
             </p>
           </div>
 
-          {/* Itemized Financial Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm tabular-nums">
               <thead>
@@ -550,7 +539,7 @@ export function LiveStayUpdatesTab({
               <tbody className="divide-y divide-white/10">
                 <tr>
                   <td className="py-3 pr-3">
-                    <div className="text-[#FAF9F6]">Total Confirmed Stay Tariff</div>
+                    <div className="text-[#FAF9F6]">Total Confirmed Care Tariff</div>
                     <div className="text-[11px] text-[#FAF9F6]/55">
                       Ref {billing.referenceCode}
                     </div>
@@ -563,7 +552,7 @@ export function LiveStayUpdatesTab({
                 <tr>
                   <td className="py-3 pr-3">
                     <div className="text-[#C5A059]">Initial 50% Deposit Paid</div>
-                    <div className="text-[11px] text-[#FAF9F6]/55">Settled prior to arrival</div>
+                    <div className="text-[11px] text-[#FAF9F6]/55">Settled after vetting</div>
                   </td>
                   <td className="py-3 text-right text-[#C5A059]">
                     − {formatZar(billing.initialDepositPaidZar)}
@@ -613,7 +602,6 @@ export function LiveStayUpdatesTab({
             </table>
           </div>
 
-          {/* Team Admin Quick Expense Logger */}
           {roleMode === 'team' && (
             <form
               onSubmit={handleLogExpense}
@@ -627,7 +615,7 @@ export function LiveStayUpdatesTab({
                   type="text"
                   value={expenseDesc}
                   onChange={(e) => setExpenseDesc(e.target.value)}
-                  placeholder="e.g. Woolworths Milk & Bread"
+                  placeholder="e.g. Woolworths Milk & Flowers"
                   className="sm:col-span-2 min-h-[40px] px-3 py-2 text-xs bg-[#1A1A1A] border border-white/15 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
                 />
                 <input
@@ -636,7 +624,7 @@ export function LiveStayUpdatesTab({
                   step="1"
                   value={expenseAmount}
                   onChange={(e) => setExpenseAmount(e.target.value)}
-                  placeholder="ZAR (e.g. 145)"
+                  placeholder="ZAR (e.g. 245)"
                   className="min-h-[40px] px-3 py-2 text-xs bg-[#1A1A1A] border border-white/15 rounded-sm text-[#FAF9F6] tabular-nums focus:outline-none focus:border-[#C5A059]"
                 />
               </div>
@@ -651,7 +639,6 @@ export function LiveStayUpdatesTab({
             </form>
           )}
 
-          {/* Settle Final Invoice Button + Paystack Checkout Confirmation */}
           <div className="pt-2 space-y-3">
             <button
               type="button"

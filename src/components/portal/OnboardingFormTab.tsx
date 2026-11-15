@@ -10,15 +10,15 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { saveEstateOnboardingDossier } from '../../services/apiPlaceholders';
+import { saveResidenceOnboardingDossier } from '../../services/apiPlaceholders';
 import {
-  EstateOnboardingDossier,
   PetOnboardingProfile,
+  ResidenceOnboardingDossier,
 } from '../../types/concierge';
 
 interface OnboardingFormTabProps {
-  dossier: EstateOnboardingDossier;
-  onSaveDossier: (saved: EstateOnboardingDossier) => void;
+  dossier: ResidenceOnboardingDossier;
+  onSaveDossier: (saved: ResidenceOnboardingDossier) => void;
   onSwitchToLiveStay: () => void;
 }
 
@@ -27,7 +27,7 @@ type OnboardingStep = 1 | 2 | 3;
 const STEP_META = [
   { step: 1 as const, label: '01. Property & Security', icon: Shield },
   { step: 2 as const, label: '02. Pet Profiles', icon: PawPrint },
-  { step: 3 as const, label: '03. “Welcome Home” Reset', icon: Sparkles },
+  { step: 3 as const, label: '03. “Welcome Home” Refresh', icon: Sparkles },
 ];
 
 export function OnboardingFormTab({
@@ -35,7 +35,7 @@ export function OnboardingFormTab({
   onSaveDossier,
   onSwitchToLiveStay,
 }: OnboardingFormTabProps) {
-  const [draft, setDraft] = useState<EstateOnboardingDossier>(dossier);
+  const [draft, setDraft] = useState<ResidenceOnboardingDossier>(dossier);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
   const [errors, setErrors] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,9 +44,9 @@ export function OnboardingFormTab({
     savedAtLabel: string;
   } | null>(null);
 
-  const updateField = <K extends keyof EstateOnboardingDossier>(
+  const updateField = <K extends keyof ResidenceOnboardingDossier>(
     key: K,
-    value: EstateOnboardingDossier[K]
+    value: ResidenceOnboardingDossier[K]
   ) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
@@ -86,11 +86,11 @@ export function OnboardingFormTab({
   const validateStep = (step: OnboardingStep): string[] => {
     const stepErrors: string[] = [];
     if (step === 1) {
-      if (draft.estateNameAndAddress.trim().length < 4) {
-        stepErrors.push('Please enter your Estate Name & Street Address.');
+      if (draft.residenceNameAndAddress.trim().length < 4) {
+        stepErrors.push('Please enter your Residence Name & Street Address.');
       }
       if (draft.gateAccessProcedure.trim().length < 4) {
-        stepErrors.push('Please specify your gate access / biometric procedure.');
+        stepErrors.push('Please specify your gate access / intercom procedure.');
       }
       if (draft.armedResponseCompanyAndPassword.trim().length < 3) {
         stepErrors.push('Please include your armed response company & password.');
@@ -137,8 +137,8 @@ export function OnboardingFormTab({
     setErrors([]);
     setIsSaving(true);
     try {
-      const response = await saveEstateOnboardingDossier(draft);
-      const savedRecord: EstateOnboardingDossier = {
+      const response = await saveResidenceOnboardingDossier(draft);
+      const savedRecord: ResidenceOnboardingDossier = {
         ...draft,
         dossierId: response.dossierId,
         savedAtIso: response.savedAtIso,
@@ -159,18 +159,18 @@ export function OnboardingFormTab({
 
   return (
     <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      {/* Left Rail: Multi-Step Progress & Supabase Dossier Status */}
+      {/* Left Rail */}
       <aside className="lg:col-span-4 bg-[#1A1A1A] border border-white/10 rounded-sm p-6 space-y-6">
         <div>
           <p className="text-xs font-medium tracking-[0.14em] uppercase text-[#C5A059] mb-1">
-            Confirmed Client Intake
+            Vetted Client Intake
           </p>
           <h3 className="font-display text-2xl font-medium text-[#FAF9F6]">
-            Digital Estate Dossier
+            Digital Residence Dossier
           </h3>
           <p className="text-xs sm:text-sm text-[#FAF9F6]/65 mt-2 leading-relaxed">
-            Complete all three onboarding sections prior to departure. Your assigned Senior
-            Guardian reviews every protocol before key handover.
+            Once we have completed your free meet-and-greet and pet introduction, complete these
+            three sections so our family team has every household detail ready.
           </p>
         </div>
 
@@ -216,7 +216,7 @@ export function OnboardingFormTab({
                   Dossier Saved ({savedNotice.dossierId})
                 </p>
                 <p className="text-[11px] text-[#FAF9F6]/65 mt-0.5">
-                  Synced at {savedNotice.savedAtLabel} SAST · Ready for guardian handover
+                  Synced at {savedNotice.savedAtLabel} SAST · Ready for handover
                 </p>
               </div>
             </div>
@@ -241,10 +241,11 @@ export function OnboardingFormTab({
           <div className="space-y-5">
             <div className="pb-4 border-b border-white/10">
               <h4 className="font-display text-2xl font-medium text-[#FAF9F6]">
-                01. Property &amp; Security Protocols
+                01. Residence &amp; Security Protocols
               </h4>
               <p className="text-xs sm:text-sm text-[#FAF9F6]/65 mt-1">
-                Estate access, armed response credentials, and utility shut-off locations.
+                Home access, armed response credentials, utility shut-offs, and bin collection
+                days.
               </p>
             </div>
 
@@ -253,14 +254,14 @@ export function OnboardingFormTab({
                 htmlFor="onb-address"
                 className="block text-xs font-semibold tracking-wide text-[#FAF9F6]/85 mb-1.5"
               >
-                Estate Name &amp; Physical Address *
+                Residence Name &amp; Street Address *
               </label>
               <input
                 id="onb-address"
                 type="text"
-                value={draft.estateNameAndAddress}
-                onChange={(e) => updateField('estateNameAndAddress', e.target.value)}
-                placeholder="e.g. 18 Rigel Avenue North, Waterkloof Ridge, Pretoria"
+                value={draft.residenceNameAndAddress}
+                onChange={(e) => updateField('residenceNameAndAddress', e.target.value)}
+                placeholder="e.g. 18 Rigel Avenue North, Waterkloof, Pretoria East"
                 className="w-full min-h-[44px] px-3.5 py-2.5 text-sm bg-[#121212] border border-white/20 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
               />
             </div>
@@ -270,14 +271,14 @@ export function OnboardingFormTab({
                 htmlFor="onb-gate"
                 className="block text-xs font-semibold tracking-wide text-[#FAF9F6]/85 mb-1.5"
               >
-                Gate Access &amp; Estate Biometric Procedure *
+                Gate Access &amp; Boom Procedure *
               </label>
               <textarea
                 id="onb-gate"
                 rows={2}
                 value={draft.gateAccessProcedure}
                 onChange={(e) => updateField('gateAccessProcedure', e.target.value)}
-                placeholder="Intercom code, MyEstate visitor PIN, guardhouse clearance instructions"
+                placeholder="Intercom code, visitor PIN, boom guard clearance instructions"
                 className="w-full px-3.5 py-2.5 text-sm bg-[#121212] border border-white/20 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
               />
             </div>
@@ -313,7 +314,7 @@ export function OnboardingFormTab({
                 rows={2}
                 value={draft.waterShutoffAndDbLocations}
                 onChange={(e) => updateField('waterShutoffAndDbLocations', e.target.value)}
-                placeholder="Exact location of main water valve, electrical DB board, and solar/generator changeover"
+                placeholder="Main water valve, DB board, and solar/generator changeover location"
                 className="w-full px-3.5 py-2.5 text-sm bg-[#121212] border border-white/20 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
               />
             </div>
@@ -323,14 +324,14 @@ export function OnboardingFormTab({
                 htmlFor="onb-quirks"
                 className="block text-xs font-semibold tracking-wide text-[#FAF9F6]/85 mb-1.5"
               >
-                House Quirks (Pool Pump, Alarm Zones, Irrigation)
+                House Quirks (Pool Pump, Alarm Zones, Bin Collection Days)
               </label>
               <textarea
                 id="onb-quirks"
                 rows={2}
                 value={draft.houseQuirks}
                 onChange={(e) => updateField('houseQuirks', e.target.value)}
-                placeholder="Pool pump hours, bypassed garden beams, sensitive locks or irrigation timers"
+                placeholder="Pool pump hours, bypassed garden beams, municipal bin day, plant watering notes"
                 className="w-full px-3.5 py-2.5 text-sm bg-[#121212] border border-white/20 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
               />
             </div>
@@ -345,7 +346,7 @@ export function OnboardingFormTab({
                   02. Household Pet Profiles
                 </h4>
                 <p className="text-xs sm:text-sm text-[#FAF9F6]/65 mt-1">
-                  Add an individual care profile for each dog or pet in residence.
+                  Add an individual care profile for each dog or pet in your home.
                 </p>
               </div>
               <button
@@ -455,7 +456,7 @@ export function OnboardingFormTab({
 
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-semibold text-[#FAF9F6]/80 mb-1">
-                        Behavioral Notes &amp; Thunderstorm Routine
+                        Behavioral Notes &amp; Playtime Preferences
                       </label>
                       <input
                         type="text"
@@ -463,7 +464,7 @@ export function OnboardingFormTab({
                         onChange={(e) =>
                           handleUpdatePet(pet.id, 'behavioralNotes', e.target.value)
                         }
-                        placeholder="Leash preferences, sleeping quarters, storm calming instructions"
+                        placeholder="Playtime games, leash preferences, sleeping quarters, storm calming"
                         className="w-full min-h-[42px] px-3 py-2 text-sm bg-[#1A1A1A] border border-white/15 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
                       />
                     </div>
@@ -478,10 +479,11 @@ export function OnboardingFormTab({
           <div className="space-y-5">
             <div className="pb-4 border-b border-white/10">
               <h4 className="font-display text-2xl font-medium text-[#FAF9F6]">
-                03. “Welcome Home” Reset Preferences
+                03. “Welcome Home” Refresh Preferences
               </h4>
               <p className="text-xs sm:text-sm text-[#FAF9F6]/65 mt-1">
-                Specify your arrival timing, fridge provisioning list, and linen preferences.
+                Specify your arrival timing, pantry essentials, fresh flower preferences, and
+                laundry instructions.
               </p>
             </div>
 
@@ -506,14 +508,14 @@ export function OnboardingFormTab({
                 htmlFor="onb-groceries"
                 className="block text-xs font-semibold tracking-wide text-[#FAF9F6]/85 mb-1.5"
               >
-                Essential Groceries to Stock in the Fridge
+                Fresh Bread, Milk, Pantry Staples &amp; Flower Preferences
               </label>
               <textarea
                 id="onb-groceries"
                 rows={3}
                 value={draft.fridgeGroceryList}
                 onChange={(e) => updateField('fridgeGroceryList', e.target.value)}
-                placeholder="Milk type, artisan bread, coffee beans, farm butter, sparkling water, fresh fruit"
+                placeholder="Milk type, fresh sourdough, coffee beans, butter, protea or seasonal flowers"
                 className="w-full px-3.5 py-2.5 text-sm bg-[#121212] border border-white/20 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
               />
             </div>
@@ -591,7 +593,7 @@ export function OnboardingFormTab({
             >
               <CheckCircle2 className="w-4 h-4 stroke-[2]" aria-hidden="true" />
               <span>
-                {isSaving ? 'Saving Estate Dossier…' : 'Save Estate & Pet Onboarding'}
+                {isSaving ? 'Saving Residence Dossier…' : 'Save Residence & Pet Onboarding'}
               </span>
             </button>
           )}

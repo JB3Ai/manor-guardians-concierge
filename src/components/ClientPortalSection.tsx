@@ -5,9 +5,9 @@ import {
   SAMPLE_PORTAL_SESSION,
 } from '../data/services';
 import {
-  EstateOnboardingDossier,
   IncidentalExpenseItem,
   PortalDailyUpdate,
+  ResidenceOnboardingDossier,
   StayBillingLedger,
 } from '../types/concierge';
 import { LiveStayUpdatesTab } from './portal/LiveStayUpdatesTab';
@@ -17,7 +17,7 @@ type ClientPortalTab = 'onboarding' | 'live-stay';
 
 export function ClientPortalSection() {
   const [activeTab, setActiveTab] = useState<ClientPortalTab>('live-stay');
-  const [dossier, setDossier] = useState<EstateOnboardingDossier>(DEFAULT_ONBOARDING_DOSSIER);
+  const [dossier, setDossier] = useState<ResidenceOnboardingDossier>(DEFAULT_ONBOARDING_DOSSIER);
   const [updates, setUpdates] = useState<PortalDailyUpdate[]>(SAMPLE_PORTAL_SESSION.updates);
   const [billing, setBilling] = useState<StayBillingLedger>(SAMPLE_PORTAL_SESSION.billing);
 
@@ -51,7 +51,7 @@ export function ClientPortalSection() {
                 textWrap: 'balance',
               }}
             >
-              Digital Estate Onboarding &amp; Live Stay Concierge Feed
+              Digital Residence Onboarding &amp; Live Stay Concierge Feed
             </h2>
           </div>
 
@@ -72,7 +72,7 @@ export function ClientPortalSection() {
               }`}
             >
               <ClipboardList className="w-4 h-4" aria-hidden="true" />
-              <span>1. Estate &amp; Pet Onboarding</span>
+              <span>1. Residence &amp; Pet Onboarding</span>
             </button>
 
             <button

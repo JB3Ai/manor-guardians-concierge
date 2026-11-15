@@ -1,13 +1,12 @@
 import { PRICING_RATES, SAMPLE_PORTAL_SESSION, WHATSAPP_BASE_URL } from '../data/services';
 import {
   ClientContactDetails,
-  EstatePortalSession,
   QuoteBreakdown,
   QuoteInput,
+  ResidencePortalSession,
 } from '../types/concierge';
 import {
-  createPaystackDepositLink,
-  LockBookingExecutionResult,
+  ConsultationRequestResult,
   sendWhatsAppQuoteSummary,
   syncBookingToGoogleCalendar,
 } from './apiPlaceholders';
@@ -62,8 +61,8 @@ export function calculateQuoteBreakdown(input: QuoteInput): QuoteBreakdown {
       : PRICING_RATES.dailyDropInRateZar;
   const baseTierLabel =
     input.baseTier === 'vip-24-7'
-      ? '24/7 VIP Estate & Pet Care'
-      : 'Daily Drop-In Visits';
+      ? '24/7 Live-In Residence & Pet Care'
+      : 'Daily Check-In Visits';
 
   const baseCareSubtotal = totalDays * dailyRateZar;
   const peakSurchargeSubtotal =
@@ -89,8 +88,11 @@ export function calculateQuoteBreakdown(input: QuoteInput): QuoteBreakdown {
     conciergeDrivingSubtotal;
 
   const estimatedTotal = subtotalBeforePeak + peakSurchargeSubtotal;
-  const depositAmount = estimatedTotal * PRICING_RATES.depositPercentage;
-  const balanceOnArrival = estimatedTotal - depositAmount;
+  const indicativeDepositAmount = estimatedTotal * PRICING_RATES.depositPercentage;
+  const balanceOnCompletion = estimatedTotal - indicativeDepositAmount;
+
+  const hasCustomQuotedItems =
+    input.selectedDayTrips.length > 0 || input.requestedSpecialistServices.length > 0;
 
   return {
     baseTier: input.baseTier,
@@ -107,9 +109,10 @@ export function calculateQuoteBreakdown(input: QuoteInput): QuoteBreakdown {
     conciergeDrivingSubtotal,
     subtotalBeforePeak,
     estimatedTotal,
-    depositAmount,
-    balanceOnArrival,
+    indicativeDepositAmount,
+    balanceOnCompletion,
     hasFestiveDates: peakFestiveDays > 0,
+    hasCustomQuotedItems,
   };
 }
 
@@ -121,28 +124,38 @@ export function buildWhatsAppUrl(message?: string): string {
 }
 
 /**
- * Orchestrates locking dates and executing placeholder API services in parallel:
- * 1. Paystack 50% deposit payment link
- * 2. WhatsApp quote summary handoff
- * 3. Google Calendar dispatch hold
+ * Free Vetting Consultation First:
+ * Sends the estimated quote + consultation preference to WhatsApp & logs a tentative calendar hold.
+ * No upfront online payment is charged prior to the meet-and-greet & pet introduction.
  */
-export async function lockDatesAndInitializeDeposit(
+export async function requestFreeConsultation(
   quoteInput: QuoteInput,
   contact: ClientContactDetails,
   breakdown: QuoteBreakdown
-): Promise<LockBookingExecutionResult> {
+): Promise<ConsultationRequestResult> {
   const suffix = Math.floor(1000 + Math.random() * 9000);
-  const referenceCode = `MG-${new Date().getFullYear()}-${suffix}`;
+  const referenceCode = `PEH-${new Date().getFullYear()}-${suffix}`;
+
+  const consultationPreferenceLabel =
+    quoteInput.consultationPreference === 'in-home-meet-greet'
+      ? 'In-Home Meet & Greet (Includes Pet Introduction)'
+      : 'Online Video Call Consultation';
 
   const addOnsSummary: string[] = [];
   if (quoteInput.airportTrips > 0) {
     addOnsSummary.push(`Airport Transfers (${quoteInput.airportTrips} trips)`);
   }
   if (quoteInput.includeWelcomeReset) {
-    addOnsSummary.push('Welcome Home Reset');
+    addOnsSummary.push('Welcome Home Refresh');
   }
   if (quoteInput.includePreArrivalMaintenance) {
     addOnsSummary.push('Pre-Arrival Power Wash / Minor Maintenance');
+  }
+  if (quoteInput.selectedDayTrips.length > 0) {
+    addOnsSummary.push(`Day Trips: ${quoteInput.selectedDayTrips.join(', ')}`);
+  }
+  if (quoteInput.requestedSpecialistServices.length > 0) {
+    addOnsSummary.push(`Specialist Staff/Services: ${quoteInput.requestedSpecialistServices.length}`);
   }
 
   const quotePayload = {
@@ -152,17 +165,17 @@ export async function lockDatesAndInitializeDeposit(
     contact,
   };
 
-  const [paystack, whatsapp, calendar] = await Promise.all([
-    createPaystackDepositLink(quotePayload),
+  const [whatsapp, calendar] = await Promise.all([
     sendWhatsAppQuoteSummary(contact.whatsappPhone, quotePayload),
     syncBookingToGoogleCalendar({
       referenceCode,
-      estateName: contact.suburbOrEstate,
+      residenceName: contact.suburbOrResidence,
       clientName: contact.fullName,
       clientEmail: contact.email,
       checkInDate: quoteInput.checkInDate,
       checkOutDate: quoteInput.checkOutDate,
       serviceTierLabel: breakdown.baseTierLabel,
+      consultationPreferenceLabel,
       addOnsSummary,
     }),
   ]);
@@ -170,7 +183,7 @@ export async function lockDatesAndInitializeDeposit(
   return {
     referenceCode,
     submittedAtIso: new Date().toISOString(),
-    paystack,
+    consultationPreferenceLabel,
     whatsapp,
     calendar,
     contact,
@@ -185,14 +198,17 @@ export async function lockDatesAndInitializeDeposit(
 export async function fetchClientPortalSession(
   referenceCode: string,
   email: string
-): Promise<{ ok: true; session: EstatePortalSession } | { ok: false; error: string }> {
+): Promise<{ ok: true; session: ResidencePortalSession } | { ok: false; error: string }> {
   await new Promise((resolve) => setTimeout(resolve, 250));
 
   const normalizedRef = referenceCode.trim().toUpperCase();
   const normalizedEmail = email.trim().toLowerCase();
 
   if (!normalizedRef) {
-    return { ok: false, error: 'Please enter your estate booking reference (e.g. MG-2026-WKR).' };
+    return {
+      ok: false,
+      error: 'Please enter your residence booking reference (e.g. PEH-2026-WKL).',
+    };
   }
   if (!normalizedEmail || !normalizedEmail.includes('@')) {
     return { ok: false, error: 'Please enter the email address registered during onboarding.' };
@@ -204,6 +220,6 @@ export async function fetchClientPortalSession(
 
   return {
     ok: false,
-    error: `No active guardianship file found for "${normalizedRef}". Use sample code MG-2026-WKR to preview a live estate log, or contact WhatsApp Concierge.`,
+    error: `No active file found for "${normalizedRef}". Use sample code PEH-2026-WKL to preview a live residence log, or contact WhatsApp Concierge.`,
   };
 }

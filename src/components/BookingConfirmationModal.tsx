@@ -2,16 +2,15 @@ import { useEffect } from 'react';
 import {
   CalendarCheck2,
   CheckCircle2,
-  CreditCard,
-  ExternalLink,
+  Handshake,
   MessageCircle,
   X,
 } from 'lucide-react';
-import { LockBookingExecutionResult } from '../services/apiPlaceholders';
+import { ConsultationRequestResult } from '../services/apiPlaceholders';
 import { formatZar } from '../services/conciergeApi';
 
 interface BookingConfirmationModalProps {
-  result: LockBookingExecutionResult | null;
+  result: ConsultationRequestResult | null;
   onClose: () => void;
 }
 
@@ -51,13 +50,13 @@ export function BookingConfirmationModal({
             />
             <div>
               <p className="text-xs font-medium tracking-[0.14em] uppercase text-[#C5A059]">
-                Dates Provisionally Locked
+                Free Consultation Request Prepared
               </p>
               <h3
                 id="booking-modal-title"
                 className="font-display text-2xl sm:text-3xl font-medium text-[#FAF9F6] mt-0.5"
               >
-                Quote Reference {result.referenceCode}
+                Reference {result.referenceCode}
               </h3>
             </div>
           </div>
@@ -76,51 +75,49 @@ export function BookingConfirmationModal({
         <div className="p-6 space-y-5">
           <p className="text-sm text-[#FAF9F6]/80 leading-relaxed">
             Thank you, <span className="font-semibold text-[#FAF9F6]">{result.contact.fullName}</span>.
-            Your provisional booking for{' '}
-            <span className="font-semibold text-[#FAF9F6]">{result.contact.suburbOrEstate}</span>{' '}
-            ({result.quoteInput.checkInDate} to {result.quoteInput.checkOutDate}) has been synced
-            and queued for guardian assignment.
+            No payment is required now. We have prepared your estimated quote for{' '}
+            <span className="font-semibold text-[#FAF9F6]">{result.contact.suburbOrResidence}</span>{' '}
+            ({result.quoteInput.checkInDate} to {result.quoteInput.checkOutDate}). Tap below to
+            send your summary via WhatsApp and confirm your free meet-and-greet and pet
+            introduction time.
           </p>
 
-          {/* Financial Summary Box */}
+          {/* Financial & Consultation Summary Box */}
           <div className="bg-[#1A1A1A] border border-white/10 rounded-sm p-4 space-y-2 text-sm tabular-nums">
-            <div className="flex justify-between text-[#FAF9F6]/75">
+            <div className="flex justify-between gap-3 text-[#FAF9F6]/75">
               <span>Service Tier</span>
-              <span className="text-[#FAF9F6] font-medium">{result.breakdown.baseTierLabel}</span>
-            </div>
-            <div className="flex justify-between text-[#FAF9F6]/75">
-              <span>Total Quote Amount</span>
-              <span className="text-[#FAF9F6] font-medium">
-                {formatZar(result.breakdown.estimatedTotal)}
+              <span className="text-[#FAF9F6] font-medium text-right">
+                {result.breakdown.baseTierLabel}
               </span>
             </div>
-            <div className="flex justify-between text-[#C5A059] font-semibold pt-2 border-t border-white/10">
-              <span>50% Deposit Due to Confirm</span>
-              <span>{formatZar(result.breakdown.depositAmount)}</span>
+            <div className="flex justify-between gap-3 text-[#FAF9F6]/75">
+              <span>Consultation Format</span>
+              <span className="text-[#C5A059] font-medium text-right">
+                {result.consultationPreferenceLabel}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3 text-[#FAF9F6]/75 pt-2 border-t border-white/10">
+              <span>Estimated Quote Total</span>
+              <span className="text-[#FAF9F6] font-semibold">
+                {formatZar(result.breakdown.estimatedTotal)}
+                {result.breakdown.hasCustomQuotedItems ? ' (+ On-Request)' : ''}
+              </span>
             </div>
           </div>
 
           {/* Placeholder Integration Confirmations */}
           <div className="space-y-2.5 text-xs text-[#FAF9F6]/75">
             <div className="flex items-start gap-2.5 p-3 bg-[#181818] border border-white/10 rounded-sm">
-              <CreditCard className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" aria-hidden="true" />
-              <div className="flex-1">
+              <Handshake className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" aria-hidden="true" />
+              <div>
                 <p className="font-semibold text-[#FAF9F6]">
-                  Paystack 50% Deposit Link Prepared
+                  Vetting &amp; Pet Introduction First
                 </p>
-                <p className="font-mono text-[11px] text-[#FAF9F6]/60 mt-0.5">
-                  Ref: {result.paystack.reference} · {formatZar(result.paystack.amountZar)} ZAR
+                <p className="text-[11px] text-[#FAF9F6]/65 mt-0.5">
+                  Dates and any 50% booking deposit are only invoiced once both your family and
+                  pets feel comfortable after our free consultation.
                 </p>
               </div>
-              <a
-                href={result.paystack.authorizationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[#C5A059] hover:text-[#D4B26E] font-medium whitespace-nowrap"
-              >
-                <span>Pay Deposit</span>
-                <ExternalLink className="w-3 h-3" aria-hidden="true" />
-              </a>
             </div>
 
             <div className="flex items-start gap-2.5 p-3 bg-[#181818] border border-white/10 rounded-sm">
@@ -130,7 +127,7 @@ export function BookingConfirmationModal({
               />
               <div>
                 <p className="font-semibold text-[#FAF9F6]">
-                  Google Calendar Guardian Hold Synced
+                  Provisional Calendar Hold Logged
                 </p>
                 <p className="text-[11px] text-[#FAF9F6]/60 mt-0.5">
                   {result.calendar.summary}
@@ -148,7 +145,7 @@ export function BookingConfirmationModal({
               className="flex items-center justify-center gap-2.5 w-full min-h-[48px] bg-[#C5A059] hover:bg-[#D4B26E] text-[#121212] font-semibold text-sm px-5 py-3 rounded-sm transition-colors"
             >
               <MessageCircle className="w-4 h-4 stroke-[2]" aria-hidden="true" />
-              <span>Open WhatsApp Handoff (Ref: {result.referenceCode})</span>
+              <span>Send Consultation &amp; Quote on WhatsApp ({result.referenceCode})</span>
             </a>
 
             <button
@@ -156,7 +153,7 @@ export function BookingConfirmationModal({
               onClick={onClose}
               className="w-full min-h-[42px] text-xs font-medium text-[#FAF9F6]/70 hover:text-[#FAF9F6] transition-colors cursor-pointer"
             >
-              Return to Quote &amp; Booking
+              Return to Quote Estimator
             </button>
           </div>
         </div>

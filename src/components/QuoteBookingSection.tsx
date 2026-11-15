@@ -1,36 +1,47 @@
-import { FormEvent, RefObject, useMemo, useRef, useState } from 'react';
+import { FormEvent, RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   Calendar,
   FileDown,
-  Lock,
+  Handshake,
+  Home,
   Minus,
+  Plane,
   Plus,
   ShieldCheck,
+  Video,
 } from 'lucide-react';
-import { PRETORIA_SUBURBS } from '../data/services';
-import { LockBookingExecutionResult } from '../services/apiPlaceholders';
+import {
+  BRAND_NAME,
+  CURATED_DAY_TRIPS,
+  PRETORIA_SUBURBS,
+  SPECIALIST_ON_REQUEST_SERVICES,
+} from '../data/services';
+import { ConsultationRequestResult } from '../services/apiPlaceholders';
 import {
   calculateQuoteBreakdown,
   formatZar,
-  lockDatesAndInitializeDeposit,
+  requestFreeConsultation,
 } from '../services/conciergeApi';
 import {
   BaseCareTier,
   ClientContactDetails,
+  ConsultationPreference,
   QuoteInput,
+  StayContextMode,
 } from '../types/concierge';
 import { BookingConfirmationModal } from './BookingConfirmationModal';
 
 interface QuoteBookingSectionProps {
   quoteInput: QuoteInput;
+  selectedSuburb?: string;
   onChangeQuoteInput: (next: QuoteInput) => void;
   startDateInputRef?: RefObject<HTMLInputElement | null>;
 }
 
 const INITIAL_CONTACT: ClientContactDetails = {
   fullName: '',
-  suburbOrEstate: PRETORIA_SUBURBS[0],
+  suburbOrResidence: PRETORIA_SUBURBS[0],
   whatsappPhone: '',
   email: '',
   specialInstructions: '',
@@ -44,35 +55,53 @@ const BASE_TIERS: Array<{
 }> = [
   {
     id: 'vip-24-7',
-    title: '24/7 VIP Estate & Pet Care',
+    title: '24/7 Live-In Residence & Pet Care',
     rateLabel: 'R1,350 / day',
     description:
-      'Dedicated live-in guardian residing on-site 24/7, timed morning & evening photo updates, and routine pool/garden checks.',
+      'Continuous live-in presence, dog feeding/playtime, watering plants, bin collection, pool upkeep, and timed daily WhatsApp updates.',
   },
   {
     id: 'daily-drop-in',
-    title: 'Daily Drop-In Visits',
+    title: 'Daily Check-In Visits',
     rateLabel: 'R650 / day',
     description:
-      'Two scheduled daily visits (morning & evening) for feeding, fresh water, post collection, and perimeter inspection.',
+      'Morning & evening home visits for feeding, supervised playtime, municipal bin days, post collection, and pool/plant checks.',
   },
 ];
 
 export function QuoteBookingSection({
   quoteInput,
+  selectedSuburb,
   onChangeQuoteInput,
   startDateInputRef,
 }: QuoteBookingSectionProps) {
   const [contact, setContact] = useState<ClientContactDetails>(INITIAL_CONTACT);
   const [formErrors, setFormErrors] = useState<string[]>([]);
-  const [isLocking, setIsLocking] = useState(false);
-  const [modalResult, setModalResult] = useState<LockBookingExecutionResult | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalResult, setModalResult] = useState<ConsultationRequestResult | null>(null);
   const ownerNameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (selectedSuburb) {
+      setContact((prev) => ({ ...prev, suburbOrResidence: selectedSuburb }));
+    }
+  }, [selectedSuburb]);
 
   const breakdown = useMemo(() => calculateQuoteBreakdown(quoteInput), [quoteInput]);
 
   const updateField = <K extends keyof QuoteInput>(key: K, value: QuoteInput[K]) => {
     onChangeQuoteInput({ ...quoteInput, [key]: value });
+  };
+
+  const toggleArrayField = (
+    key: 'selectedDayTrips' | 'requestedSpecialistServices',
+    value: string
+  ) => {
+    const current = quoteInput[key];
+    const next = current.includes(value)
+      ? current.filter((item) => item !== value)
+      : [...current, value];
+    updateField(key, next);
   };
 
   const handleLoadHolidaySample = () => {
@@ -88,20 +117,20 @@ export function QuoteBookingSection({
     updateField('airportTrips', next);
   };
 
-  const validateAndLockBooking = async () => {
+  const validateAndRequestConsultation = async () => {
     const errors: string[] = [];
 
     if (breakdown.totalDays <= 0) {
       errors.push('Please select an End Date after your Start Date.');
     }
     if (contact.fullName.trim().length < 2) {
-      errors.push('Please enter your Full Name under Estate Owner Details.');
+      errors.push('Please enter your Full Name under Residence Contact Details.');
     }
     if (!contact.whatsappPhone.trim() || contact.whatsappPhone.replace(/\D/g, '').length < 9) {
-      errors.push('Please enter a valid WhatsApp / Mobile Number (at least 9 digits).');
+      errors.push('Please enter a valid South African WhatsApp number (at least 9 digits).');
     }
     if (!contact.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim())) {
-      errors.push('Please enter a valid Email Address for your Pro-Forma Invoice.');
+      errors.push('Please enter a valid Email Address for your quote & consultation summary.');
     }
 
     if (errors.length > 0) {
@@ -114,18 +143,18 @@ export function QuoteBookingSection({
     }
 
     setFormErrors([]);
-    setIsLocking(true);
+    setIsSubmitting(true);
     try {
-      const result = await lockDatesAndInitializeDeposit(quoteInput, contact, breakdown);
+      const result = await requestFreeConsultation(quoteInput, contact, breakdown);
       setModalResult(result);
     } finally {
-      setIsLocking(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await validateAndLockBooking();
+    await validateAndRequestConsultation();
   };
 
   const handleGeneratePdfQuote = () => {
@@ -141,14 +170,14 @@ export function QuoteBookingSection({
   return (
     <section
       id="quote"
-      className="bg-[#FAF9F6] text-[#121212] py-16 sm:py-24 border-b border-[#121212]/10"
+      className="bg-[#F1EFEA] text-[#121212] py-16 sm:py-24 border-b border-[#121212]/10"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading (hidden in PDF print) */}
         <div className="no-print flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-10 border-b border-[#121212]/10">
           <div className="max-w-2xl">
             <p className="text-xs sm:text-sm font-medium tracking-[0.14em] uppercase text-[#8A6A2B] mb-3">
-              Instant Quote &amp; Booking
+              Interactive Quote Estimator &amp; Free Consultation
             </p>
             <h2
               className="font-display font-medium text-[#121212] leading-[1.12] tracking-tight"
@@ -157,7 +186,7 @@ export function QuoteBookingSection({
                 textWrap: 'balance',
               }}
             >
-              Configure Your Dates, Tier &amp; Instant Pro-Forma Invoice
+              Calculate Your Estimate, Then Meet Us Free First
             </h2>
           </div>
 
@@ -171,7 +200,7 @@ export function QuoteBookingSection({
           </button>
         </div>
 
-        {/* Two-Column Calculator & Live Pro-Forma Invoice */}
+        {/* Two-Column Estimator + Live Pro-Forma Quote Card */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 mt-10 items-start">
           {/* Left Column: Configurator Form (hidden in PDF print) */}
           <form
@@ -179,20 +208,78 @@ export function QuoteBookingSection({
             noValidate
             className="no-print lg:col-span-7 bg-white border border-[#121212]/10 rounded-sm p-6 sm:p-8 space-y-8"
           >
-            {/* 01. Interactive Date Range Picker */}
+            {/* 01. Context & Date Range Picker */}
             <div>
               <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
                 <h3 className="font-display text-2xl font-medium text-[#121212]">
-                  01. Interactive Date Range Picker
+                  01. How Can We Help &amp; Preferred Dates
                 </h3>
                 <span className="font-mono text-xs font-medium text-[#8A6A2B] tabular-nums">
                   {breakdown.totalDays} {breakdown.totalDays === 1 ? 'day' : 'days'} selected
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-[#121212]/65 mb-5">
-                Any dates falling between December 20 and January 2 automatically trigger the +25%
-                Peak Festive Surcharge.
+              <p className="text-xs sm:text-sm text-[#121212]/65 mb-4">
+                Whether you are traveling or relaxing at home wanting to offload December chores and
+                driving, select your dates below.
               </p>
+
+              {/* Stay Context Switch: Traveling vs At Home */}
+              <div
+                role="radiogroup"
+                aria-label="Residence care context"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5"
+              >
+                {(
+                  [
+                    {
+                      id: 'away-travel' as StayContextMode,
+                      title: 'We Are Traveling / Away',
+                      desc: '24/7 live-in residence care, pets & timed photo dispatches',
+                      icon: Plane,
+                    },
+                    {
+                      id: 'at-home-support' as StayContextMode,
+                      title: 'We Are at Home — Offload Chores',
+                      desc: 'Help with errands, hosting prep, school runs & outings',
+                      icon: Home,
+                    },
+                  ] as const
+                ).map((ctx) => {
+                  const Icon = ctx.icon;
+                  const active = quoteInput.stayContext === ctx.id;
+                  return (
+                    <button
+                      key={ctx.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => updateField('stayContext', ctx.id)}
+                      className={`text-left p-3.5 rounded-sm border transition-colors cursor-pointer flex items-start gap-3 ${
+                        active
+                          ? 'bg-[#121212] text-[#FAF9F6] border-[#C5A059]'
+                          : 'bg-[#FAF9F6] text-[#121212] border-[#121212]/15 hover:border-[#C5A059]'
+                      }`}
+                    >
+                      <Icon
+                        className={`w-4 h-4 mt-0.5 shrink-0 ${
+                          active ? 'text-[#C5A059]' : 'text-[#8A6A2B]'
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <div>
+                        <span className="block text-xs sm:text-sm font-semibold">{ctx.title}</span>
+                        <span
+                          className={`block text-[11px] mt-0.5 ${
+                            active ? 'text-[#FAF9F6]/70' : 'text-[#121212]/65'
+                          }`}
+                        >
+                          {ctx.desc}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -200,7 +287,7 @@ export function QuoteBookingSection({
                     htmlFor="check-in-date"
                     className="block text-xs font-semibold tracking-wide text-[#121212]/80 mb-1.5"
                   >
-                    Start Date (Arrival / Handover)
+                    Start Date
                   </label>
                   <input
                     ref={startDateInputRef}
@@ -217,7 +304,7 @@ export function QuoteBookingSection({
                     htmlFor="check-out-date"
                     className="block text-xs font-semibold tracking-wide text-[#121212]/80 mb-1.5"
                   >
-                    End Date (Owner Return)
+                    End Date
                   </label>
                   <input
                     id="check-out-date"
@@ -230,10 +317,9 @@ export function QuoteBookingSection({
                 </div>
               </div>
 
-              {/* Automatic Festive Detection Callout */}
               {breakdown.totalDays <= 0 ? (
                 <p className="mt-3 text-xs text-[#991B1B] font-medium">
-                  Select an End Date after your Start Date to compute your ZAR tariff.
+                  Select an End Date after your Start Date to compute your ZAR estimate.
                 </p>
               ) : breakdown.hasFestiveDates ? (
                 <div className="mt-4 p-3.5 bg-[#FAF5EB] border border-[#C5A059]/60 rounded-sm text-xs sm:text-sm text-[#121212] flex items-center justify-between gap-3 tabular-nums">
@@ -242,7 +328,7 @@ export function QuoteBookingSection({
                       Peak Festive Window Detected:
                     </strong>{' '}
                     {breakdown.peakFestiveDays} of {breakdown.totalDays} days fall within Dec 20 –
-                    Jan 2 (+25% surcharge applied).
+                    Jan 2 (+25% surcharge).
                   </span>
                   <span className="font-semibold text-[#8A6A2B] whitespace-nowrap">
                     +{formatZar(breakdown.peakSurchargeSubtotal)}
@@ -250,19 +336,17 @@ export function QuoteBookingSection({
                 </div>
               ) : (
                 <p className="mt-3 text-xs text-[#121212]/65 tabular-nums">
-                  Standard seasonal tariff applies across all {breakdown.totalDays} days (outside
-                  Dec 20 – Jan 2).
+                  Standard seasonal tariff applies across all {breakdown.totalDays} days.
                 </p>
               )}
             </div>
 
-            {/* 02. Base Care Tier & Add-On Selector */}
+            {/* 02. Core Care Tier & Priced Add-Ons */}
             <div className="pt-6 border-t border-[#121212]/10">
               <h3 className="font-display text-2xl font-medium text-[#121212] mb-4">
-                02. Service Tier &amp; Concierge Add-Ons
+                02. Core Residence Care &amp; Add-Ons
               </h3>
 
-              {/* Base Tier Radio Cards */}
               <div
                 role="radiogroup"
                 aria-label="Base service tier"
@@ -307,16 +391,15 @@ export function QuoteBookingSection({
                 })}
               </div>
 
-              {/* Add-On Controls */}
               <div className="space-y-3">
-                {/* Airport Drop-off / Pick-up Counter */}
+                {/* Airport Transfers Counter */}
                 <div className="p-4 bg-[#FAF9F6] border border-[#121212]/15 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <span className="text-sm font-semibold text-[#121212]">
                       Airport Drop-off / Pick-up Transfers
                     </span>
                     <span className="block text-xs text-[#121212]/65">
-                      OR Tambo or Lanseria terminal chauffeur · R450 per trip
+                      Trusted private chauffeur to OR Tambo or Lanseria · R450 per trip
                     </span>
                   </div>
 
@@ -345,7 +428,7 @@ export function QuoteBookingSection({
                   </div>
                 </div>
 
-                {/* "Welcome Home" Reset Checkbox */}
+                {/* "Welcome Home" Refresh Checkbox */}
                 <label className="flex items-start gap-3 p-4 bg-[#FAF9F6] border border-[#121212]/15 rounded-sm cursor-pointer hover:border-[#C5A059] transition-colors">
                   <input
                     type="checkbox"
@@ -356,11 +439,11 @@ export function QuoteBookingSection({
                   <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <div>
                       <span className="text-sm font-semibold text-[#121212]">
-                        “Welcome Home” Reset
+                        “Welcome Home” Refresh
                       </span>
                       <span className="block text-xs text-[#121212]/65">
-                        Full pre-return deep clean, freshly laundered linens &amp; fridge essentials
-                        stocked
+                        Fresh bread, milk, pantry staples, crisp linens &amp; fresh flower
+                        arrangements waiting for you
                       </span>
                     </div>
                     <span className="text-sm font-semibold text-[#8A6A2B] tabular-nums whitespace-nowrap">
@@ -382,11 +465,11 @@ export function QuoteBookingSection({
                   <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <div>
                       <span className="text-sm font-semibold text-[#121212]">
-                        Pre-Arrival Power Wash / Minor Maintenance
+                        Pre-Arrival Power Wash &amp; Minor Maintenance
                       </span>
                       <span className="block text-xs text-[#121212]/65">
-                        Travertine terrace &amp; driveway high-pressure wash, gutter clear &amp;
-                        minor fixture checks
+                        Patio &amp; driveway power wash, window detailing, gutters &amp; basic
+                        handyman checks
                       </span>
                     </div>
                     <span className="text-sm font-semibold text-[#8A6A2B] tabular-nums whitespace-nowrap">
@@ -395,14 +478,14 @@ export function QuoteBookingSection({
                   </div>
                 </label>
 
-                {/* Optional Concierge Driving & Pet Count */}
+                {/* Trusted Chauffeur / Errands & Pets */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                   <div>
                     <label
                       htmlFor="pet-count"
                       className="block text-xs font-semibold tracking-wide text-[#121212]/80 mb-1.5"
                     >
-                      Pets Under Care
+                      Pets in Residence
                     </label>
                     <input
                       id="pet-count"
@@ -422,7 +505,7 @@ export function QuoteBookingSection({
                       htmlFor="errand-hours"
                       className="block text-xs font-semibold tracking-wide text-[#121212]/80 mb-1.5"
                     >
-                      Errand Hours (R250/hr)
+                      Chauffeur / Errands (R250/hr)
                     </label>
                     <input
                       id="errand-hours"
@@ -442,7 +525,7 @@ export function QuoteBookingSection({
                       htmlFor="errand-km"
                       className="block text-xs font-semibold tracking-wide text-[#121212]/80 mb-1.5"
                     >
-                      Errand Distance (R8/km)
+                      Est. Chauffeur km (R8/km)
                     </label>
                     <input
                       id="errand-km"
@@ -461,11 +544,129 @@ export function QuoteBookingSection({
               </div>
             </div>
 
-            {/* 03. Estate Owner Details */}
-            <div className="pt-6 border-t border-[#121212]/10">
-              <h3 className="font-display text-2xl font-medium text-[#121212] mb-4">
-                03. Estate Owner Details (Required to Lock Dates)
-              </h3>
+            {/* 03. Curated Day Trips & Vetted Family Staff (Quoted on Request) */}
+            <div className="pt-6 border-t border-[#121212]/10 space-y-6">
+              <div>
+                <h3 className="font-display text-2xl font-medium text-[#121212] mb-1">
+                  03. Curated Day Trips &amp; On-Request Home Staff
+                </h3>
+                <p className="text-xs sm:text-sm text-[#121212]/65 mb-4">
+                  Tick any family tours or supervised specialist services to include in your free
+                  consultation discussion (quoted per itinerary or scope).
+                </p>
+
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#8A6A2B] mb-2.5">
+                  Curated Kids &amp; Family Day Trips
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-5">
+                  {CURATED_DAY_TRIPS.map((trip) => (
+                    <label
+                      key={trip}
+                      className="flex items-start gap-2.5 p-3 bg-[#FAF9F6] border border-[#121212]/15 rounded-sm text-xs text-[#121212] cursor-pointer hover:border-[#C5A059]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={quoteInput.selectedDayTrips.includes(trip)}
+                        onChange={() => toggleArrayField('selectedDayTrips', trip)}
+                        className="mt-0.5 w-4 h-4 accent-[#C5A059]"
+                      />
+                      <span>{trip}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#8A6A2B] mb-2.5">
+                  Vetted Family Staff &amp; Specialist Services (Quoted on Request)
+                </p>
+                <div className="space-y-2.5">
+                  {SPECIALIST_ON_REQUEST_SERVICES.map((item) => (
+                    <label
+                      key={item}
+                      className="flex items-start gap-2.5 p-3 bg-[#FAF9F6] border border-[#121212]/15 rounded-sm text-xs text-[#121212] cursor-pointer hover:border-[#C5A059]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={quoteInput.requestedSpecialistServices.includes(item)}
+                        onChange={() => toggleArrayField('requestedSpecialistServices', item)}
+                        className="mt-0.5 w-4 h-4 accent-[#C5A059]"
+                      />
+                      <span>{item}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 04. Free Vetting Consultation & Contact Details */}
+            <div className="pt-6 border-t border-[#121212]/10 space-y-5">
+              <div>
+                <h3 className="font-display text-2xl font-medium text-[#121212] mb-1">
+                  04. Free Vetting Consultation &amp; Contact Details
+                </h3>
+                <p className="text-xs sm:text-sm text-[#121212]/65 mb-4">
+                  All new clients meet our family first—including a mandatory pet introduction
+                  session—before any dates are locked or invoiced.
+                </p>
+
+                <div
+                  role="radiogroup"
+                  aria-label="Preferred consultation format"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5"
+                >
+                  {(
+                    [
+                      {
+                        id: 'in-home-meet-greet' as ConsultationPreference,
+                        title: 'In-Home Meet & Greet',
+                        desc: 'Free Pretoria East home visit + mandatory pet introduction',
+                        icon: Handshake,
+                      },
+                      {
+                        id: 'online-video' as ConsultationPreference,
+                        title: 'Online Video Call First',
+                        desc: '15-min Zoom / WhatsApp video intro + virtual home tour',
+                        icon: Video,
+                      },
+                    ] as const
+                  ).map((opt) => {
+                    const Icon = opt.icon;
+                    const active = quoteInput.consultationPreference === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => updateField('consultationPreference', opt.id)}
+                        className={`text-left p-3.5 rounded-sm border transition-colors cursor-pointer flex items-start gap-3 ${
+                          active
+                            ? 'bg-[#121212] text-[#FAF9F6] border-[#C5A059]'
+                            : 'bg-[#FAF9F6] text-[#121212] border-[#121212]/15 hover:border-[#C5A059]'
+                        }`}
+                      >
+                        <Icon
+                          className={`w-4 h-4 mt-0.5 shrink-0 ${
+                            active ? 'text-[#C5A059]' : 'text-[#8A6A2B]'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <div>
+                          <span className="block text-xs sm:text-sm font-semibold">
+                            {opt.title}
+                          </span>
+                          <span
+                            className={`block text-[11px] mt-0.5 ${
+                              active ? 'text-[#FAF9F6]/70' : 'text-[#121212]/65'
+                            }`}
+                          >
+                            {opt.desc}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -489,15 +690,17 @@ export function QuoteBookingSection({
 
                 <div>
                   <label
-                    htmlFor="estate-suburb"
+                    htmlFor="residence-suburb"
                     className="block text-xs font-semibold tracking-wide text-[#121212]/80 mb-1.5"
                   >
-                    Pretoria Estate / Suburb *
+                    Pretoria East Suburb *
                   </label>
                   <select
-                    id="estate-suburb"
-                    value={contact.suburbOrEstate}
-                    onChange={(e) => setContact({ ...contact, suburbOrEstate: e.target.value })}
+                    id="residence-suburb"
+                    value={contact.suburbOrResidence}
+                    onChange={(e) =>
+                      setContact({ ...contact, suburbOrResidence: e.target.value })
+                    }
                     className="w-full min-h-[44px] px-3 py-2.5 text-sm bg-[#FAF9F6] border border-[#121212]/20 rounded-sm text-[#121212] focus:outline-none focus:border-[#C5A059]"
                   >
                     {PRETORIA_SUBURBS.map((suburb) => (
@@ -554,7 +757,7 @@ export function QuoteBookingSection({
               >
                 <div className="flex items-center gap-2 font-semibold">
                   <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
-                  <span>Before locking your dates:</span>
+                  <span>Before submitting your consultation request:</span>
                 </div>
                 <ul className="list-disc pl-5 text-xs sm:text-sm space-y-0.5">
                   {formErrors.map((err) => (
@@ -565,9 +768,8 @@ export function QuoteBookingSection({
             )}
           </form>
 
-          {/* Right Column: Live Itemized Quote & Pro-Forma Invoice Card (Print-Ready) */}
+          {/* Right Column: Live Itemized Quote & Pro-Forma Estimate Card (Print-Ready) */}
           <aside className="print-invoice-surface lg:col-span-5 bg-[#121212] text-[#FAF9F6] rounded-sm p-6 sm:p-8 border border-[#C5A059]/30 lg:sticky lg:top-24">
-            {/* Pro-Forma Branded Header */}
             <div className="pb-5 border-b border-white/15 flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -575,8 +777,8 @@ export function QuoteBookingSection({
                     className="print-gold-accent w-4 h-4 text-[#C5A059]"
                     aria-hidden="true"
                   />
-                  <span className="print-gold-accent text-xs font-medium tracking-[0.14em] uppercase text-[#C5A059]">
-                    Pro-Forma Invoice · The Manor Guardians
+                  <span className="print-gold-accent text-xs font-medium tracking-[0.12em] uppercase text-[#C5A059]">
+                    Pro-Forma Estimate · {BRAND_NAME}
                   </span>
                 </div>
                 <h3 className="font-display text-2xl sm:text-3xl font-medium text-[#FAF9F6]">
@@ -584,25 +786,25 @@ export function QuoteBookingSection({
                 </h3>
                 <p className="text-xs text-[#FAF9F6]/65 mt-1">
                   {quoteInput.checkInDate} → {quoteInput.checkOutDate} · {breakdown.totalDays}{' '}
-                  {breakdown.totalDays === 1 ? 'day' : 'days'}
+                  {breakdown.totalDays === 1 ? 'day' : 'days'} ·{' '}
+                  {quoteInput.stayContext === 'away-travel' ? 'Away Travel' : 'At-Home Support'}
                 </p>
               </div>
-              <div className="text-right font-mono text-[11px] text-[#FAF9F6]/60 tabular-nums">
+              <div className="text-right font-mono text-[11px] text-[#FAF9F6]/60 tabular-nums shrink-0">
                 <div>Issued {proFormaDate}</div>
-                <div>Pretoria, ZA</div>
+                <div>Pretoria East</div>
               </div>
             </div>
 
-            {/* Client Metadata Summary (especially helpful on PDF print) */}
-            {(contact.fullName || contact.suburbOrEstate) && (
+            {(contact.fullName || contact.suburbOrResidence) && (
               <div className="py-3 border-b border-white/10 text-xs text-[#FAF9F6]/75 flex flex-wrap justify-between gap-2">
                 <span>
                   Prepared for:{' '}
                   <strong className="text-[#FAF9F6]">
-                    {contact.fullName || 'Prospective Estate Client'}
+                    {contact.fullName || 'Prospective Residence Client'}
                   </strong>
                 </span>
-                <span>{contact.suburbOrEstate}</span>
+                <span>{contact.suburbOrResidence}</span>
               </div>
             )}
 
@@ -637,9 +839,9 @@ export function QuoteBookingSection({
               {breakdown.welcomeResetSubtotal > 0 && (
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <dt className="text-[#FAF9F6]">“Welcome Home” Reset</dt>
+                    <dt className="text-[#FAF9F6]">“Welcome Home” Refresh</dt>
                     <dd className="text-xs text-[#FAF9F6]/60">
-                      Deep clean, fresh linens &amp; fridge stock
+                      Bread, milk, pantry staples, fresh linen &amp; flower arrangements
                     </dd>
                   </div>
                   <dd className="font-medium text-[#FAF9F6]">
@@ -652,10 +854,10 @@ export function QuoteBookingSection({
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <dt className="text-[#FAF9F6]">
-                      Pre-Arrival Power Wash / Minor Maintenance
+                      Pre-Arrival Power Wash &amp; Minor Maintenance
                     </dt>
                     <dd className="text-xs text-[#FAF9F6]/60">
-                      Paving &amp; terrace wash, exterior check
+                      Patio wash, window detailing &amp; basic checks
                     </dd>
                   </div>
                   <dd className="font-medium text-[#FAF9F6]">
@@ -667,7 +869,7 @@ export function QuoteBookingSection({
               {breakdown.conciergeDrivingSubtotal > 0 && (
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <dt className="text-[#FAF9F6]">Concierge Driving &amp; Errands</dt>
+                    <dt className="text-[#FAF9F6]">Trusted Chauffeur &amp; Errands</dt>
                     <dd className="text-xs text-[#FAF9F6]/60">
                       {quoteInput.errandHours} hr @ R250 + {quoteInput.errandKilometers} km @ R8
                     </dd>
@@ -678,13 +880,35 @@ export function QuoteBookingSection({
                 </div>
               )}
 
-              {/* Subtotal Line */}
+              {quoteInput.selectedDayTrips.length > 0 && (
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <dt className="text-[#FAF9F6]">Curated Day Trips &amp; Outings</dt>
+                    <dd className="text-xs text-[#FAF9F6]/60">
+                      {quoteInput.selectedDayTrips.join(', ')}
+                    </dd>
+                  </div>
+                  <dd className="font-medium text-[#C5A059] whitespace-nowrap">On Request</dd>
+                </div>
+              )}
+
+              {quoteInput.requestedSpecialistServices.length > 0 && (
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <dt className="text-[#FAF9F6]">Vetted Family Staff &amp; Specialist Care</dt>
+                    <dd className="text-xs text-[#FAF9F6]/60">
+                      {quoteInput.requestedSpecialistServices.join(', ')}
+                    </dd>
+                  </div>
+                  <dd className="font-medium text-[#C5A059] whitespace-nowrap">On Request</dd>
+                </div>
+              )}
+
               <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[#FAF9F6]/85">
                 <dt>Subtotal (Before Festive Surcharge)</dt>
                 <dd className="font-medium">{formatZar(breakdown.subtotalBeforePeak)}</dd>
               </div>
 
-              {/* Peak Surcharge Line (when applicable) */}
               {breakdown.peakSurchargeSubtotal > 0 && (
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -703,43 +927,46 @@ export function QuoteBookingSection({
               )}
             </dl>
 
-            {/* Total Amount & 50% Deposit Box */}
+            {/* Estimated Total & Vetting Policy Note */}
             <div className="pt-5 border-t border-white/15 space-y-2.5 tabular-nums">
               <div className="flex items-baseline justify-between">
-                <span className="text-sm font-medium text-[#FAF9F6]/80">Total Amount</span>
+                <span className="text-sm font-medium text-[#FAF9F6]/80">
+                  Estimated Total
+                </span>
                 <span className="font-display text-3xl sm:text-4xl font-semibold text-[#FAF9F6]">
                   {formatZar(breakdown.estimatedTotal)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-sm pt-2 border-t border-white/10">
-                <span className="print-gold-accent font-semibold text-[#C5A059]">
-                  Required 50% Deposit to Lock Dates
+              <div className="flex items-center justify-between text-xs sm:text-sm pt-2 border-t border-white/10">
+                <span className="print-gold-accent text-[#C5A059]">
+                  Indicative 50% Deposit (After Vetting)
                 </span>
-                <span className="print-gold-accent font-bold text-[#C5A059]">
-                  {formatZar(breakdown.depositAmount)}
+                <span className="print-gold-accent font-semibold text-[#C5A059]">
+                  {formatZar(breakdown.indicativeDepositAmount)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-[#FAF9F6]/60">
-                <span>Remaining 50% Balance on Handover</span>
-                <span>{formatZar(breakdown.balanceOnArrival)}</span>
-              </div>
+              <p className="text-[11px] text-[#FAF9F6]/65 leading-relaxed pt-1">
+                Free Vetting Policy: R0 due today. All new reservations include a free online or
+                in-home meet-and-greet with a mandatory pet introduction before any deposit is
+                invoiced.
+              </p>
             </div>
 
             {/* Action Buttons (hidden in PDF print) */}
             <div className="no-print mt-6 pt-5 border-t border-white/10 space-y-3">
               <button
                 type="button"
-                onClick={validateAndLockBooking}
-                disabled={isLocking}
-                className="flex items-center justify-center gap-2 w-full min-h-[48px] bg-[#C5A059] hover:bg-[#D4B26E] disabled:opacity-60 text-[#121212] font-semibold text-sm sm:text-base px-5 py-3 rounded-sm transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FAF9F6]"
+                onClick={validateAndRequestConsultation}
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 w-full min-h-[48px] bg-[#C5A059] hover:bg-[#D4B26E] disabled:opacity-60 text-[#121212] font-semibold text-sm px-5 py-3 rounded-sm transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FAF9F6]"
               >
-                <Lock className="w-4 h-4 stroke-[2]" aria-hidden="true" />
+                <Handshake className="w-4 h-4 stroke-[2]" aria-hidden="true" />
                 <span>
-                  {isLocking
-                    ? 'Initializing Paystack & Calendar Hold…'
-                    : 'Lock Dates & Pay 50% Deposit'}
+                  {isSubmitting
+                    ? 'Preparing Consultation & WhatsApp Summary…'
+                    : 'Request Free In-Person or Online Consultation'}
                 </span>
               </button>
 
@@ -756,7 +983,7 @@ export function QuoteBookingSection({
         </div>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Consultation Confirmation Modal */}
       <BookingConfirmationModal
         result={modalResult}
         onClose={() => setModalResult(null)}
