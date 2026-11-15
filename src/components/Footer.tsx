@@ -51,6 +51,13 @@ export function Footer({ onNavigateSection }: FooterProps) {
               </button>
               <button
                 type="button"
+                onClick={() => onNavigateSection('testimonials')}
+                className="text-left text-[#FAF9F6]/75 hover:text-[#C5A059] transition-colors cursor-pointer"
+              >
+                Client Testimonials
+              </button>
+              <button
+                type="button"
                 onClick={() => onNavigateSection('quote')}
                 className="text-left text-[#FAF9F6]/75 hover:text-[#C5A059] transition-colors cursor-pointer"
               >

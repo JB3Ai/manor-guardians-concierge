@@ -6,6 +6,7 @@ import { Navbar } from './components/Navbar';
 import { PromiseTimeline } from './components/PromiseTimeline';
 import { QuoteBookingSection } from './components/QuoteBookingSection';
 import { ServicesGrid } from './components/ServicesGrid';
+import { TestimonialsSection } from './components/TestimonialsSection';
 import { WhoWeAreSection } from './components/WhoWeAreSection';
 import { PRETORIA_SUBURBS } from './data/services';
 import { BespokeService, QuoteInput } from './types/concierge';
@@ -108,6 +109,7 @@ export default function App() {
         <ServicesGrid onSelectServiceAction={handleSelectServiceAction} />
         <WhoWeAreSection onSelectSuburbForQuote={handleSelectSuburbForQuote} />
         <PromiseTimeline />
+        <TestimonialsSection onRequestConsultation={handleCalculateQuoteAndConsult} />
         <QuoteBookingSection
           quoteInput={quoteInput}
           selectedSuburb={selectedSuburb}

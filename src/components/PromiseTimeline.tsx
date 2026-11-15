@@ -27,21 +27,6 @@ const TIMELINE_STEPS = [
   },
 ];
 
-const CLIENT_REFERENCES = [
-  {
-    quote:
-      'The free in-home meet-and-greet put us at ease immediately—watching the kids gently introduce themselves to both Ridgebacks meant we actually switched off in Cape Town. Coming home to fresh flowers, crisp sheets, and a stocked fridge was effortless.',
-    author: 'Dr. Pieter & Nadia Cronjé',
-    residence: 'Waterkloof Ridge Residence · 14-day Festive Care',
-  },
-  {
-    quote:
-      'We weren’t even traveling in December—we stayed home hosting overseas family and used their concierge for airport transfers, an Irene Farm kids’ outing, extra supervised helpers, and bin/pool upkeep. Worth every Rand.',
-    author: 'Claire van Rooyen',
-    residence: 'Silver Lakes Family Home · At-Home December Support',
-  },
-];
-
 export function PromiseTimeline() {
   return (
     <section
@@ -102,27 +87,6 @@ export function PromiseTimeline() {
               </div>
             );
           })}
-        </div>
-
-        {/* Adjacent Client Proof */}
-        <div className="mt-12 sm:mt-16 pt-10 border-t border-[#121212]/10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          {CLIENT_REFERENCES.map((ref) => (
-            <blockquote
-              key={ref.author}
-              className="bg-white border border-[#121212]/10 rounded-sm p-6 sm:p-8 flex flex-col justify-between gap-5"
-            >
-              <p className="font-display text-xl sm:text-2xl italic text-[#121212]/90 leading-snug">
-                “{ref.quote}”
-              </p>
-              <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-[#121212]/70">
-                <span className="font-semibold text-[#121212]">{ref.author}</span>
-                <span aria-hidden="true" className="text-[#C5A059]">
-                  ·
-                </span>
-                <span>{ref.residence}</span>
-              </footer>
-            </blockquote>
-          ))}
         </div>
       </div>
     </section>
