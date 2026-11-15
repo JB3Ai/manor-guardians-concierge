@@ -3,9 +3,10 @@ import { BRAND_NAME, PRETORIA_SUBURBS, WHATSAPP_BASE_URL } from '../data/service
 
 interface FooterProps {
   onNavigateSection: (sectionId: string) => void;
+  onOpenClientPortal: () => void;
 }
 
-export function Footer({ onNavigateSection }: FooterProps) {
+export function Footer({ onNavigateSection, onOpenClientPortal }: FooterProps) {
   return (
     <footer className="no-print bg-[#0D0D0D] text-[#FAF9F6] py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -65,7 +66,14 @@ export function Footer({ onNavigateSection }: FooterProps) {
               </button>
               <button
                 type="button"
-                onClick={() => onNavigateSection('portal')}
+                onClick={() => onNavigateSection('faq')}
+                className="text-left text-[#FAF9F6]/75 hover:text-[#C5A059] transition-colors cursor-pointer"
+              >
+                Frequently Asked Questions
+              </button>
+              <button
+                type="button"
+                onClick={onOpenClientPortal}
                 className="text-left text-[#FAF9F6]/75 hover:text-[#C5A059] transition-colors cursor-pointer"
               >
                 Client Portal

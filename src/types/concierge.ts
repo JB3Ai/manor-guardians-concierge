@@ -98,6 +98,19 @@ export interface PetOnboardingProfile {
   primaryVetContact: string;
 }
 
+export interface EmergencyContactPerson {
+  fullName: string;
+  relationship: string;
+  phone: string;
+  email: string;
+}
+
+export interface EmergencyProtocolDetails {
+  primaryContact: EmergencyContactPerson;
+  secondaryContact: EmergencyContactPerson;
+  urgentNote: string;
+}
+
 export interface ResidenceOnboardingDossier {
   residenceNameAndAddress: string;
   gateAccessProcedure: string;
@@ -108,6 +121,7 @@ export interface ResidenceOnboardingDossier {
   expectedReturnDateTime: string;
   fridgeGroceryList: string;
   laundryAndCurtainInstructions: string;
+  emergencyProtocol: EmergencyProtocolDetails;
   savedAtIso?: string;
   dossierId?: string;
 }

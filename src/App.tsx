@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { ClientPortalSection } from './components/ClientPortalSection';
+import { ClientPortalShowcase } from './components/ClientPortalShowcase';
+import { FaqSection } from './components/FaqSection';
 import { Footer } from './components/Footer';
 import { HeroSection } from './components/HeroSection';
 import { Navbar } from './components/Navbar';
@@ -30,15 +32,41 @@ const DEFAULT_QUOTE_INPUT: QuoteInput = {
 };
 
 export default function App() {
+  const [activeView, setActiveView] = useState<'landing' | 'portal'>('landing');
+  const [portalInitialTab, setPortalInitialTab] = useState<'onboarding' | 'live-stay'>(
+    'live-stay'
+  );
   const [quoteInput, setQuoteInput] = useState<QuoteInput>(DEFAULT_QUOTE_INPUT);
   const [selectedSuburb, setSelectedSuburb] = useState<string>(PRETORIA_SUBURBS[0]);
   const startDateInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToSection = (sectionId: string) => {
+    if (activeView !== 'landing') {
+      setActiveView('landing');
+      window.setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 60);
+      return;
+    }
+
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  const handleOpenClientPortal = (initialTab: 'onboarding' | 'live-stay' = 'live-stay') => {
+    setPortalInitialTab(initialTab);
+    setActiveView('portal');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToLanding = () => {
+    setActiveView('landing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCalculateQuoteAndConsult = () => {
@@ -102,24 +130,41 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#121212] text-[#FAF9F6]">
-      <Navbar onNavigateSection={scrollToSection} />
+      <Navbar
+        activeView={activeView}
+        onNavigateSection={scrollToSection}
+        onOpenClientPortal={() => handleOpenClientPortal('live-stay')}
+      />
 
       <main className="flex-1">
-        <HeroSection onCalculateQuote={handleCalculateQuoteAndConsult} />
-        <ServicesGrid onSelectServiceAction={handleSelectServiceAction} />
-        <WhoWeAreSection onSelectSuburbForQuote={handleSelectSuburbForQuote} />
-        <PromiseTimeline />
-        <TestimonialsSection onRequestConsultation={handleCalculateQuoteAndConsult} />
-        <QuoteBookingSection
-          quoteInput={quoteInput}
-          selectedSuburb={selectedSuburb}
-          onChangeQuoteInput={setQuoteInput}
-          startDateInputRef={startDateInputRef}
-        />
-        <ClientPortalSection />
+        {activeView === 'portal' ? (
+          <ClientPortalSection
+            initialTab={portalInitialTab}
+            onBackToOverview={handleBackToLanding}
+          />
+        ) : (
+          <>
+            <HeroSection onCalculateQuote={handleCalculateQuoteAndConsult} />
+            <ServicesGrid onSelectServiceAction={handleSelectServiceAction} />
+            <WhoWeAreSection onSelectSuburbForQuote={handleSelectSuburbForQuote} />
+            <PromiseTimeline />
+            <TestimonialsSection onRequestConsultation={handleCalculateQuoteAndConsult} />
+            <QuoteBookingSection
+              quoteInput={quoteInput}
+              selectedSuburb={selectedSuburb}
+              onChangeQuoteInput={setQuoteInput}
+              startDateInputRef={startDateInputRef}
+            />
+            <ClientPortalShowcase onOpenPortal={handleOpenClientPortal} />
+            <FaqSection onRequestConsultation={handleCalculateQuoteAndConsult} />
+          </>
+        )}
       </main>
 
-      <Footer onNavigateSection={scrollToSection} />
+      <Footer
+        onNavigateSection={scrollToSection}
+        onOpenClientPortal={() => handleOpenClientPortal('live-stay')}
+      />
     </div>
   );
 }

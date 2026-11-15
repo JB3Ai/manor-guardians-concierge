@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ClipboardList, Radio } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, ClipboardList, Radio } from 'lucide-react';
 import {
   DEFAULT_ONBOARDING_DOSSIER,
   SAMPLE_PORTAL_SESSION,
@@ -15,11 +15,23 @@ import { OnboardingFormTab } from './portal/OnboardingFormTab';
 
 type ClientPortalTab = 'onboarding' | 'live-stay';
 
-export function ClientPortalSection() {
-  const [activeTab, setActiveTab] = useState<ClientPortalTab>('live-stay');
+interface ClientPortalSectionProps {
+  initialTab?: ClientPortalTab;
+  onBackToOverview: () => void;
+}
+
+export function ClientPortalSection({
+  initialTab = 'live-stay',
+  onBackToOverview,
+}: ClientPortalSectionProps) {
+  const [activeTab, setActiveTab] = useState<ClientPortalTab>(initialTab);
   const [dossier, setDossier] = useState<ResidenceOnboardingDossier>(DEFAULT_ONBOARDING_DOSSIER);
   const [updates, setUpdates] = useState<PortalDailyUpdate[]>(SAMPLE_PORTAL_SESSION.updates);
   const [billing, setBilling] = useState<StayBillingLedger>(SAMPLE_PORTAL_SESSION.billing);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const handleAddUpdate = (newUpdate: PortalDailyUpdate) => {
     setUpdates((prev) => [newUpdate, ...prev]);
@@ -35,16 +47,28 @@ export function ClientPortalSection() {
   return (
     <section
       id="portal"
-      className="no-print bg-[#121212] text-[#FAF9F6] py-16 sm:py-24 border-b border-white/10"
+      className="no-print bg-[#121212] text-[#FAF9F6] py-12 sm:py-16 min-h-[75vh] border-b border-white/10"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back to Overview Bar */}
+        <div className="mb-8">
+          <button
+            type="button"
+            onClick={onBackToOverview}
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-[#C5A059] hover:text-[#D4B26E] transition-colors cursor-pointer py-1.5"
+          >
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span>Back to Pretoria East Overview</span>
+          </button>
+        </div>
+
         {/* Header + Two Primary Portal Tabs */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-10 border-b border-white/10">
           <div className="max-w-2xl">
             <p className="text-xs sm:text-sm font-medium tracking-[0.14em] uppercase text-[#C5A059] mb-3">
-              Client Portal
+              Client Portal Workspace
             </p>
-            <h2
+            <h1
               className="font-display font-medium text-[#FAF9F6] leading-[1.12] tracking-tight"
               style={{
                 fontSize: 'clamp(1.85rem, 3.2vw, 2.85rem)',
@@ -52,7 +76,7 @@ export function ClientPortalSection() {
               }}
             >
               Digital Residence Onboarding &amp; Live Stay Concierge Feed
-            </h2>
+            </h1>
           </div>
 
           <div

@@ -266,3 +266,58 @@ export async function logStayIncidentalExpense(
     expenseId: expense.id,
   };
 }
+
+export interface UrgentAssistancePayload {
+  residenceAddress: string;
+  primaryContactName: string;
+  primaryContactPhone: string;
+  secondaryContactName: string;
+  secondaryContactPhone: string;
+  urgentReason: string;
+}
+
+export interface UrgentAssistanceResponse {
+  dispatched: boolean;
+  alertId: string;
+  dispatchedAtIso: string;
+  notifiedRecipients: string[];
+  whatsappEscalationUrl: string;
+}
+
+/**
+ * Placeholder API: Dispatches an urgent emergency assistance alert to the homeowner's primary & secondary contacts and concierge escalation line.
+ * Replace with Twilio SMS / WhatsApp Cloud API / Pager webhook in production.
+ */
+export async function triggerUrgentAssistanceAlert(
+  payload: UrgentAssistancePayload
+): Promise<UrgentAssistanceResponse> {
+  await new Promise((resolve) => setTimeout(resolve, 220));
+
+  const alertId = `URG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const notifiedRecipients = [
+    `${payload.primaryContactName} (${payload.primaryContactPhone})`,
+    ...(payload.secondaryContactName.trim() && payload.secondaryContactPhone.trim()
+      ? [`${payload.secondaryContactName} (${payload.secondaryContactPhone})`]
+      : []),
+  ];
+
+  const escalationText = [
+    `URGENT ASSISTANCE ALERT (${alertId})`,
+    `Residence: ${payload.residenceAddress}`,
+    `Primary Contact: ${payload.primaryContactName} (${payload.primaryContactPhone})`,
+    payload.secondaryContactName
+      ? `Secondary Contact: ${payload.secondaryContactName} (${payload.secondaryContactPhone})`
+      : '',
+    `Note: ${payload.urgentReason || 'Immediate assistance or callback requested.'}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return {
+    dispatched: true,
+    alertId,
+    dispatchedAtIso: new Date().toISOString(),
+    notifiedRecipients,
+    whatsappEscalationUrl: `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(escalationText)}`,
+  };
+}

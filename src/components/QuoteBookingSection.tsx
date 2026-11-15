@@ -2,6 +2,8 @@ import { FormEvent, RefObject, useEffect, useMemo, useRef, useState } from 'reac
 import {
   AlertCircle,
   Calendar,
+  Check,
+  ChevronDown,
   FileDown,
   Handshake,
   Home,
@@ -10,6 +12,7 @@ import {
   Plus,
   ShieldCheck,
   Video,
+  X,
 } from 'lucide-react';
 import {
   BRAND_NAME,
@@ -68,6 +71,182 @@ const BASE_TIERS: Array<{
       'Morning & evening home visits for feeding, supervised playtime, municipal bin days, post collection, and pool/plant checks.',
   },
 ];
+
+interface MultiSelectDropdownProps {
+  id: string;
+  label: string;
+  placeholder: string;
+  options: readonly string[];
+  selectedValues: string[];
+  onToggleValue: (value: string) => void;
+  onClearAll: () => void;
+}
+
+function MultiSelectDropdown({
+  id,
+  label,
+  placeholder,
+  options,
+  selectedValues,
+  onToggleValue,
+  onClearAll,
+}: MultiSelectDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const triggerText =
+    selectedValues.length === 0
+      ? placeholder
+      : selectedValues.length === 1
+        ? selectedValues[0]
+        : `${selectedValues.length} selected · ${selectedValues[0]}`;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="flex items-end justify-between gap-2 mb-1.5 sm:min-h-[2.25rem]">
+        <label
+          htmlFor={id}
+          className="block text-xs font-semibold uppercase tracking-wider text-[#8A6A2B] leading-snug"
+        >
+          {label}
+        </label>
+        {selectedValues.length > 0 && (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="text-[11px] font-medium text-[#121212]/60 hover:text-[#121212] underline underline-offset-2 cursor-pointer shrink-0"
+          >
+            Clear ({selectedValues.length})
+          </button>
+        )}
+      </div>
+
+      <button
+        id={id}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`w-full min-h-[46px] px-3.5 py-2.5 text-sm bg-[#FAF9F6] border rounded-sm flex items-center justify-between gap-3 text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:border-[#C5A059] ${
+          isOpen
+            ? 'border-[#C5A059] bg-white'
+            : selectedValues.length > 0
+              ? 'border-[#C5A059]/75 text-[#121212]'
+              : 'border-[#121212]/20 hover:border-[#C5A059]'
+        }`}
+      >
+        <span
+          className={`truncate ${
+            selectedValues.length === 0 ? 'text-[#121212]/55' : 'text-[#121212] font-medium'
+          }`}
+        >
+          {triggerText}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-[#8A6A2B] shrink-0 transition-transform duration-150 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+          aria-hidden="true"
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          aria-label={label}
+          className="absolute left-0 right-0 z-30 mt-1.5 bg-white border border-[#121212]/20 shadow-xl rounded-sm overflow-hidden"
+        >
+          <div className="max-h-64 overflow-y-auto divide-y divide-[#121212]/8">
+            {options.map((option) => {
+              const checked = selectedValues.includes(option);
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  role="option"
+                  aria-selected={checked}
+                  onClick={() => onToggleValue(option)}
+                  className={`w-full min-h-[44px] px-3.5 py-2.5 text-left text-xs sm:text-[13px] flex items-start gap-3 transition-colors cursor-pointer ${
+                    checked
+                      ? 'bg-[#FAF5EB] text-[#121212] font-medium'
+                      : 'bg-white text-[#121212]/85 hover:bg-[#FAF9F6]'
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+                      checked
+                        ? 'bg-[#121212] border-[#C5A059] text-[#C5A059]'
+                        : 'bg-[#FAF9F6] border-[#121212]/30 text-transparent'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <Check className="w-3 h-3 stroke-[2.5]" />
+                  </span>
+                  <span className="leading-snug">{option}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="px-3.5 py-2 bg-[#FAF9F6] border-t border-[#121212]/10 flex items-center justify-between text-xs">
+            <span className="text-[#121212]/60 tabular-nums">
+              {selectedValues.length} selected
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="font-semibold text-[#8A6A2B] hover:text-[#121212] px-2 py-1 cursor-pointer"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {selectedValues.length > 0 && (
+        <ul className="mt-2 space-y-1 text-xs text-[#121212]/75">
+          {selectedValues.map((item) => (
+            <li key={item} className="flex items-start justify-between gap-2 leading-snug">
+              <span className="truncate">· {item}</span>
+              <button
+                type="button"
+                onClick={() => onToggleValue(item)}
+                aria-label={`Remove ${item}`}
+                className="text-[#121212]/50 hover:text-[#991B1B] shrink-0 p-0.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function QuoteBookingSection({
   quoteInput,
@@ -545,55 +724,35 @@ export function QuoteBookingSection({
             </div>
 
             {/* 03. Curated Day Trips & Vetted Family Staff (Quoted on Request) */}
-            <div className="pt-6 border-t border-[#121212]/10 space-y-6">
-              <div>
-                <h3 className="font-display text-2xl font-medium text-[#121212] mb-1">
-                  03. Curated Day Trips &amp; On-Request Home Staff
-                </h3>
-                <p className="text-xs sm:text-sm text-[#121212]/65 mb-4">
-                  Tick any family tours or supervised specialist services to include in your free
-                  consultation discussion (quoted per itinerary or scope).
-                </p>
+            <div className="pt-6 border-t border-[#121212]/10">
+              <h3 className="font-display text-2xl font-medium text-[#121212] mb-1">
+                03. Curated Day Trips &amp; On-Request Home Staff
+              </h3>
+              <p className="text-xs sm:text-sm text-[#121212]/65 mb-4">
+                Select any family tours or supervised specialist services to include in your free
+                consultation discussion (quoted per itinerary or scope).
+              </p>
 
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#8A6A2B] mb-2.5">
-                  Curated Kids &amp; Family Day Trips
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-5">
-                  {CURATED_DAY_TRIPS.map((trip) => (
-                    <label
-                      key={trip}
-                      className="flex items-start gap-2.5 p-3 bg-[#FAF9F6] border border-[#121212]/15 rounded-sm text-xs text-[#121212] cursor-pointer hover:border-[#C5A059]"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={quoteInput.selectedDayTrips.includes(trip)}
-                        onChange={() => toggleArrayField('selectedDayTrips', trip)}
-                        className="mt-0.5 w-4 h-4 accent-[#C5A059]"
-                      />
-                      <span>{trip}</span>
-                    </label>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                <MultiSelectDropdown
+                  id="curated-day-trips-dropdown"
+                  label="Curated Kids & Family Day Trips"
+                  placeholder="Select curated day trips (optional)"
+                  options={CURATED_DAY_TRIPS}
+                  selectedValues={quoteInput.selectedDayTrips}
+                  onToggleValue={(trip) => toggleArrayField('selectedDayTrips', trip)}
+                  onClearAll={() => updateField('selectedDayTrips', [])}
+                />
 
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#8A6A2B] mb-2.5">
-                  Vetted Family Staff &amp; Specialist Services (Quoted on Request)
-                </p>
-                <div className="space-y-2.5">
-                  {SPECIALIST_ON_REQUEST_SERVICES.map((item) => (
-                    <label
-                      key={item}
-                      className="flex items-start gap-2.5 p-3 bg-[#FAF9F6] border border-[#121212]/15 rounded-sm text-xs text-[#121212] cursor-pointer hover:border-[#C5A059]"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={quoteInput.requestedSpecialistServices.includes(item)}
-                        onChange={() => toggleArrayField('requestedSpecialistServices', item)}
-                        className="mt-0.5 w-4 h-4 accent-[#C5A059]"
-                      />
-                      <span>{item}</span>
-                    </label>
-                  ))}
-                </div>
+                <MultiSelectDropdown
+                  id="specialist-services-dropdown"
+                  label="Vetted Family Staff & Specialist Services (Quoted on Request)"
+                  placeholder="Select specialist services (optional)"
+                  options={SPECIALIST_ON_REQUEST_SERVICES}
+                  selectedValues={quoteInput.requestedSpecialistServices}
+                  onToggleValue={(item) => toggleArrayField('requestedSpecialistServices', item)}
+                  onClearAll={() => updateField('requestedSpecialistServices', [])}
+                />
               </div>
             </div>
 

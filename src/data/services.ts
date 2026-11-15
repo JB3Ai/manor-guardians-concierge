@@ -265,6 +265,21 @@ export const DEFAULT_ONBOARDING_DOSSIER: ResidenceOnboardingDossier = {
     'Woolworths Ayrshire Full Cream Milk (2L), fresh sourdough bread, salted farm butter, Lavazza Qualità Oro beans, fresh protea/seasonal flower arrangement.',
   laundryAndCurtainInstructions:
     'Press master suite white percale linen on return morning; open living room shears at 08:00 and set master AC to 21°C two hours before arrival.',
+  emergencyProtocol: {
+    primaryContact: {
+      fullName: 'Dr. Pieter Cronjé (Homeowner)',
+      relationship: 'Primary Homeowner · Travelling Mobile',
+      phone: '+27 82 555 0148',
+      email: 'pieter.cronje@example.co.za',
+    },
+    secondaryContact: {
+      fullName: 'Annelie Pretorius (Local Keyholder)',
+      relationship: 'Neighbour / Spare Keyholder · Waterkloof',
+      phone: '+27 83 555 0192',
+      email: 'annelie.keyholder@example.co.za',
+    },
+    urgentNote: '',
+  },
 };
 
 export const SAMPLE_PORTAL_SESSION: ResidencePortalSession = {
