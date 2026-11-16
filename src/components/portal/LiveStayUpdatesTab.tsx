@@ -49,15 +49,15 @@ const SAMPLE_PHOTO_OPTIONS = [
   { label: 'No photo attached', url: '' },
   {
     label: 'Veranda & Pool Pet Check Photo',
-    url: '/src/assets/images/portal_daily_update_pet_1794747603008.jpg',
+    url: '/images/portal_daily_update_pet_1794747603008.jpg',
   },
   {
     label: 'Terrace Golden Hour Check Photo',
-    url: '/src/assets/images/service_estate_pet_care_1794747601774.jpg',
+    url: '/images/service_estate_pet_care_1794747601774.jpg',
   },
   {
     label: 'Kitchen & Welcome Refresh Photo',
-    url: '/src/assets/images/service_welcome_reset_1794747602927.jpg',
+    url: '/images/service_welcome_reset_1794747602927.jpg',
   },
 ];
 

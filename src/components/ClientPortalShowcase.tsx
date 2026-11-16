@@ -70,7 +70,7 @@ export function ClientPortalShowcase({ onOpenPortal }: ClientPortalShowcaseProps
 
                 <div className="aspect-[4/3] w-full bg-[#0E0E0E]">
                   <ResilientImage
-                    src="/src/assets/images/portal_daily_update_pet_1794747603008.jpg"
+                    src="/images/portal_daily_update_pet_1794747603008.jpg"
                     alt="Two Rhodesian Ridgebacks enjoying morning sunshine on a Pretoria East patio"
                     fallbackTitle="Morning Pet Check-In"
                     className="w-full h-full object-cover"
@@ -131,7 +131,7 @@ export function ClientPortalShowcase({ onOpenPortal }: ClientPortalShowcaseProps
 
                 <div className="aspect-[4/3] w-full bg-[#0E0E0E]">
                   <ResilientImage
-                    src="/src/assets/images/service_estate_pet_care_1794747601774.jpg"
+                    src="/images/service_estate_pet_care_1794747601774.jpg"
                     alt="Golden retriever resting calmly on a clean travertine terrace at dusk"
                     fallbackTitle="Evening Residence Sweep"
                     className="w-full h-full object-cover"
@@ -193,7 +193,7 @@ export function ClientPortalShowcase({ onOpenPortal }: ClientPortalShowcaseProps
 
                 <div className="aspect-[16/9] w-full bg-[#0E0E0E]">
                   <ResilientImage
-                    src="/src/assets/images/service_welcome_reset_1794747602927.jpg"
+                    src="/images/service_welcome_reset_1794747602927.jpg"
                     alt="Fresh proteas, crystal carafe, and spotless alabaster kitchen counter prepared for return"
                     fallbackTitle="Welcome Home Refresh"
                     className="w-full h-full object-cover"

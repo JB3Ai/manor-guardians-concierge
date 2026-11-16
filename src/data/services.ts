@@ -50,7 +50,7 @@ export const BESPOKE_SERVICES: BespokeService[] = [
       'Window washing, pool chemical upkeep & basic handyman home maintenance',
       'Timed 08:00 & 18:00 WhatsApp photo & wellness updates',
     ],
-    featuredImage: '/src/assets/images/service_estate_pet_care_1794747601774.jpg',
+    featuredImage: '/images/service_estate_pet_care_1794747601774.jpg',
     featuredImageAlt:
       'Golden retriever resting calmly on a sunlit Pretoria East residence veranda',
     actionLabel: 'Estimate Stay or Home Support',
@@ -70,7 +70,7 @@ export const BESPOKE_SERVICES: BespokeService[] = [
       'Fresh protea or seasonal flower arrangements placed in living spaces',
       'Full surface polish & freshly laundered, pressed bedroom linens',
     ],
-    featuredImage: '/src/assets/images/service_welcome_reset_1794747602927.jpg',
+    featuredImage: '/images/service_welcome_reset_1794747602927.jpg',
     featuredImageAlt:
       'Luxury kitchen island with fresh protea flowers, crystal carafe and pressed white linen',
     actionLabel: 'Add Welcome Refresh',
@@ -305,7 +305,7 @@ export const SAMPLE_PORTAL_SESSION: ResidencePortalSession = {
       },
       caretakerNotes:
         'Zuri and Rocco had a great morning garden walk and supervised ball playtime before the sun rose. Rocco took his Mobiflex chew with breakfast. Municipal bins rolled out, pool weir cleared, and solar inverter at 98%.',
-      photoUrl: '/src/assets/images/portal_daily_update_pet_1794747603008.jpg',
+      photoUrl: '/images/portal_daily_update_pet_1794747603008.jpg',
       photoAlt:
         'Two Rhodesian Ridgebacks relaxing on a shaded Pretoria sandstone patio beside the pool',
     },
@@ -336,7 +336,7 @@ export const SAMPLE_PORTAL_SESSION: ResidencePortalSession = {
       },
       caretakerNotes:
         'Picked up fresh pool chlorine from Poolrite Waterkloof and balanced pH to 7.4. Both Ridgebacks hydrated and relaxed calmly on the travertine veranda.',
-      photoUrl: '/src/assets/images/service_estate_pet_care_1794747601774.jpg',
+      photoUrl: '/images/service_estate_pet_care_1794747601774.jpg',
       photoAlt: 'Calm dog resting on warm travertine patio beside timber residence doors',
     },
   ],

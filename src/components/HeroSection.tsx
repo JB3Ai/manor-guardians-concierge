@@ -15,7 +15,7 @@ export function HeroSection({ onCalculateQuote }: HeroSectionProps) {
       {/* Full-bleed Architectural Backdrop with Measured Scrim */}
       <div className="absolute inset-0">
         <ResilientImage
-          src="/src/assets/images/hero_pretoria_estate_1794747601161.jpg"
+          src="/images/hero_pretoria_estate_1794747601161.jpg"
           alt="Luxury contemporary Pretoria East residence illuminated at twilight beside an infinity pool"
           loading="eager"
           fallbackTitle="Pretoria East Home & Pet Concierge"
