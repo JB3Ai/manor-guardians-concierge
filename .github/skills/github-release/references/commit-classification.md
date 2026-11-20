@@ -2,12 +2,12 @@
 
 > **Role in the workflow:** Commit messages are a *secondary* signal. The code diff
 > is always read first and treated as ground truth. Use these heuristics to add
-> intent and context on top of what the diff already shows — not to replace it.
+> intent and context on top of what the diff already shows: not to replace it.
 > When a commit message contradicts the diff, trust the diff.
 
 When reading `git log` output, map each commit to one of the categories below.
 Repos that follow Conventional Commits (https://www.conventionalcommits.org/) will
-have explicit prefixes — use them directly. For freeform commit messages, use the
+have explicit prefixes: use them directly. For freeform commit messages, use the
 heuristics.
 
 ---
@@ -73,7 +73,7 @@ or the commits inside the merge. If the PR title follows Conventional Commits, u
 
 Default to **PATCH** if the commit looks like maintenance. Escalate to **MINOR** if
 there's any mention of new functionality. Escalate to **MAJOR** only with explicit
-evidence of a breaking change — don't guess at breaking.
+evidence of a breaking change; don't guess at breaking.
 
 ---
 

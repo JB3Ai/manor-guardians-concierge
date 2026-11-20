@@ -45,12 +45,12 @@ export function HeroSection({ onCalculateQuote }: HeroSectionProps) {
               textWrap: 'balance',
             }}
           >
-            Your Residence, Impeccably Cared For—Whether Away or at Home
+            Your Residence, Impeccably Cared For at Home or Away
           </h1>
 
           <p className="text-base sm:text-lg text-[#FAF9F6]/85 leading-relaxed max-w-2xl mb-9">
             Trusted local family support in Pretoria East. Travel with 24/7 live-in home and pet
-            guardianship plus daily WhatsApp photo updates—or stay home and let us handle December
+            guardianship plus daily WhatsApp photo updates, or stay home and let us handle December
             chores, errands, chauffeur drives, and hosting prep. Every booking starts with a free
             vetting consultation and pet introduction.
           </p>

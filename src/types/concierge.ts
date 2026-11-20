@@ -67,6 +67,7 @@ export interface QuoteBreakdown {
   baseCareSubtotal: number;
   peakSurchargeSubtotal: number;
   airportTransferSubtotal: number;
+  dayTripSubtotal: number;
   welcomeResetSubtotal: number;
   preArrivalMaintenanceSubtotal: number;
   conciergeDrivingSubtotal: number;
@@ -166,6 +167,7 @@ export interface ResidencePortalSession {
   residenceName: string;
   referenceCode: string;
   datesLabel: string;
+  status?: string;
   leadGuardian: string;
   teamMembers: string[];
   petsSummary: string;
@@ -173,4 +175,9 @@ export interface ResidencePortalSession {
   resetScheduled: string;
   updates: PortalDailyUpdate[];
   billing: StayBillingLedger;
+}
+
+export interface ResidencePortalData {
+  session: ResidencePortalSession;
+  dossier: ResidenceOnboardingDossier;
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ClientPortalSection } from './components/ClientPortalSection';
 import { ClientPortalShowcase } from './components/ClientPortalShowcase';
 import { FaqSection } from './components/FaqSection';
@@ -33,12 +33,40 @@ const DEFAULT_QUOTE_INPUT: QuoteInput = {
 
 export default function App() {
   const [activeView, setActiveView] = useState<'landing' | 'portal'>('landing');
+  const [portalReferenceCode, setPortalReferenceCode] = useState('');
+  const [portalAccessToken, setPortalAccessToken] = useState('');
   const [portalInitialTab, setPortalInitialTab] = useState<'onboarding' | 'live-stay'>(
     'live-stay'
   );
   const [quoteInput, setQuoteInput] = useState<QuoteInput>(DEFAULT_QUOTE_INPUT);
   const [selectedSuburb, setSelectedSuburb] = useState<string>(PRETORIA_SUBURBS[0]);
   const startDateInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const referenceCode = params.get('ref') || '';
+    const token =
+      params.get('token') ||
+      (referenceCode
+        ? window.sessionStorage.getItem(`manor-guardians:portal-token:${referenceCode}`) || ''
+        : '');
+    if (referenceCode && token) {
+      window.sessionStorage.setItem(`manor-guardians:portal-token:${referenceCode}`, token);
+      setPortalReferenceCode(referenceCode);
+      setPortalAccessToken(token);
+      setActiveView('portal');
+      params.delete('token');
+      const cleanSearch = params.toString();
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`
+      );
+    } else if (window.location.pathname === '/portal') {
+      setActiveView('portal');
+      if (referenceCode) setPortalReferenceCode(referenceCode);
+    }
+  }, []);
 
   const scrollToSection = (sectionId: string) => {
     if (activeView !== 'landing') {
@@ -66,6 +94,7 @@ export default function App() {
 
   const handleBackToLanding = () => {
     setActiveView('landing');
+    window.history.replaceState(null, '', '/');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -140,6 +169,8 @@ export default function App() {
         {activeView === 'portal' ? (
           <ClientPortalSection
             initialTab={portalInitialTab}
+            initialReferenceCode={portalReferenceCode}
+            initialPortalToken={portalAccessToken}
             onBackToOverview={handleBackToLanding}
           />
         ) : (

@@ -4,21 +4,14 @@ import {
   ResidenceOnboardingDossier,
   ResidencePortalSession,
 } from '../types/concierge';
+import { PRICING_RATES } from './pricing';
+
+export { PRICING_RATES } from './pricing';
 
 export const BRAND_NAME = 'Pretoria East Home & Pet Concierge';
-export const WHATSAPP_BASE_URL = 'https://wa.me/27000000000';
-
-export const PRICING_RATES = {
-  vipDailyRateZar: 1350,
-  dailyDropInRateZar: 650,
-  peakFestiveSurchargeRate: 0.25, // +25% from Dec 20 to Jan 2
-  airportTransferTripZar: 450,
-  conciergeDrivingHourlyZar: 250,
-  conciergeDrivingPerKmZar: 8,
-  welcomeHomeResetFlatZar: 600,
-  preArrivalMaintenanceFlatZar: 850,
-  depositPercentage: 0.5,
-} as const;
+const whatsappBusinessNumber =
+  (import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER || '').replace(/\D/g, '') || '27000000000';
+export const WHATSAPP_BASE_URL = `https://wa.me/${whatsappBusinessNumber}`;
 
 export const CURATED_DAY_TRIPS = [
   'Cullinan Diamond Mine Tour',
@@ -44,7 +37,7 @@ export const BESPOKE_SERVICES: BespokeService[] = [
     priceLabel: 'R1,350',
     billingUnit: 'per day (24/7) · R650/day drop-in',
     summary:
-      'Attentive care for your home and animals—whether you are flying abroad or staying home and simply want to offload December chores, pet walks, and hosting upkeep.',
+      'Attentive care for your home and animals, whether you are flying abroad or staying home and simply want to offload December chores, pet walks, and hosting upkeep.',
     highlights: [
       'Dog feeding, supervised playtime, watering plants & taking municipal bins out',
       'Window washing, pool chemical upkeep & basic handyman home maintenance',
@@ -64,7 +57,7 @@ export const BESPOKE_SERVICES: BespokeService[] = [
     priceLabel: 'R600',
     billingUnit: 'flat fee',
     summary:
-      'Step through your front door—or prepare for visiting family—to a calm, spotless home with chilled essentials and fresh South African blooms already arranged.',
+      'Step through your front door, or prepare for visiting family, to a calm, spotless home with chilled essentials and fresh South African blooms already arranged.',
     highlights: [
       'Fresh artisan bread, milk, coffee, butter & chilled pantry staples stocked',
       'Fresh protea or seasonal flower arrangements placed in living spaces',
@@ -81,10 +74,10 @@ export const BESPOKE_SERVICES: BespokeService[] = [
     indexNumber: '03',
     categoryLabel: 'Trusted Chauffeur & Day Trips',
     title: 'Private Transport, School Runs & Curated Tours',
-    priceLabel: 'R450 / trip',
+    priceLabel: 'R450 airport · R1,200 day trip',
     billingUnit: 'airport · R250/hr + R8/km on-demand',
     summary:
-      'Safe, personally trusted Uber-style private transport for school runs, errands, and OR Tambo/Lanseria transfers—plus guided local day trips for kids or visiting family.',
+      'Safe, personally trusted Uber-style private transport for school runs, errands, and OR Tambo/Lanseria transfers, plus guided local day trips for kids or visiting family.',
     highlights: [
       'Airport transfers (R450/trip) & reliable on-demand chauffeur rides',
       'Curated day trips: Cullinan Diamond Mine, Irene Farm & Acrobranch',
@@ -114,9 +107,9 @@ export const BESPOKE_SERVICES: BespokeService[] = [
     id: 'peak-festive-surcharge',
     indexNumber: '05',
     categoryLabel: 'Peak Holiday Coverage',
-    title: 'Peak Festive Window (Dec 20 – Jan 2)',
+    title: 'Peak Festive Window (Dec 20 to Jan 2)',
     priceLabel: '+25%',
-    billingUnit: 'Dec 20 – Jan 2 dates only',
+    billingUnit: 'Dec 20 to Jan 2 dates only',
     summary:
       'Guaranteed uninterrupted family team availability across Christmas and New Year’s Eve, including New Year fireworks calming protocols for dogs.',
     highlights: [
@@ -149,70 +142,70 @@ export const BESPOKE_SERVICES: BespokeService[] = [
 export const PRETORIA_EAST_COVERAGE: PretoriaSuburbCoverage[] = [
   {
     name: 'Waterkloof',
-    responseEta: '10–15 min arrival',
+    responseEta: '10-15 min arrival',
     highlights: 'Inside red boundary · Ambassadors’ Mile residences, ridge homes & gardens',
     mapX: 16,
     mapY: 18,
   },
   {
     name: 'Menlo Park',
-    responseEta: '8–12 min arrival',
+    responseEta: '8-12 min arrival',
     highlights: 'Inside red boundary · Leafy family homes near Hazelwood & schools',
     mapX: 22,
     mapY: 10,
   },
   {
     name: 'Lynnwood',
-    responseEta: '8–12 min arrival',
+    responseEta: '8-12 min arrival',
     highlights: 'Inside red boundary · Boomed avenues, Lynnwood Ridge & Struben Dam',
     mapX: 24,
     mapY: 6,
   },
   {
     name: 'Faerie Glen',
-    responseEta: '5–10 min arrival',
+    responseEta: '5-10 min arrival',
     highlights: 'Inside red boundary · Central Pretoria East base & hillside properties',
     mapX: 48,
     mapY: 24,
   },
   {
     name: 'Garsfontein',
-    responseEta: '6–10 min arrival',
+    responseEta: '6-10 min arrival',
     highlights: 'Inside red boundary · Established family streets & school-run corridors',
     mapX: 42,
     mapY: 36,
   },
   {
     name: 'Silver Lakes',
-    responseEta: '12–18 min arrival',
+    responseEta: '12-18 min arrival',
     highlights: 'Inside red boundary · Golf & wildlife residences along the N4 corridor',
     mapX: 74,
     mapY: 12,
   },
   {
     name: 'Moreleta Park',
-    responseEta: '8–12 min arrival',
+    responseEta: '8-12 min arrival',
     highlights: 'Inside red boundary · Family homes bordering Moreleta Kloof Reserve',
     mapX: 36,
     mapY: 64,
   },
   {
     name: 'Mooikloof',
-    responseEta: '10–16 min arrival',
+    responseEta: '10-16 min arrival',
     highlights: 'Inside red boundary · Mooikloof & Mooikloof Ridge spacious properties',
     mapX: 58,
     mapY: 68,
   },
   {
     name: 'Erasmuskloof',
-    responseEta: '10–15 min arrival',
+    responseEta: '10-15 min arrival',
     highlights: 'Inside red boundary · Convenient N1/R21 access & Kloof Hospital precinct',
     mapX: 22,
     mapY: 50,
   },
   {
     name: 'Monument Park',
-    responseEta: '12–16 min arrival',
+    responseEta: '12-16 min arrival',
     highlights: 'Inside red boundary · Quiet tree-lined avenues with quick R21 access',
     mapX: 10,
     mapY: 40,
@@ -238,13 +231,13 @@ export const DEFAULT_ONBOARDING_DOSSIER: ResidenceOnboardingDossier = {
   waterShutoffAndDbLocations:
     'Main water stopcock beside northern boundary wall; primary DB & Sunsynk 16kW inverter in double garage alcove.',
   houseQuirks:
-    'Pool pump runs 08:00–14:00 daily; Zone 4 patio beam bypassed while dogs enjoy garden playtime. Municipal bins out Thursdays 06:30.',
+    'Pool pump runs 08:00-14:00 daily; Zone 4 patio beam bypassed while dogs enjoy garden playtime. Municipal bins out Thursdays 06:30.',
   pets: [
     {
       id: 'pet-1',
       name: 'Zuri',
       breed: 'Rhodesian Ridgeback (Female, 4 yrs)',
-      feedingScheduleAndPortions: '07:00 & 17:30 — 320g Acana Adult + 1 tbsp salmon oil',
+      feedingScheduleAndPortions: '07:00 & 17:30: 320g Acana Adult + 1 tbsp salmon oil',
       medicationsOrAllergies: 'None; sensitive to poultry treats',
       behavioralNotes:
         'Gentle indoors; loves ball playtime with the kids and closed curtains during summer thunder',
@@ -254,7 +247,7 @@ export const DEFAULT_ONBOARDING_DOSSIER: ResidenceOnboardingDossier = {
       id: 'pet-2',
       name: 'Rocco',
       breed: 'Rhodesian Ridgeback (Male, 7 yrs)',
-      feedingScheduleAndPortions: '07:00 & 17:30 — 350g Acana Adult',
+      feedingScheduleAndPortions: '07:00 & 17:30: 350g Acana Adult',
       medicationsOrAllergies: '1 × Mobiflex joint chew with morning meal',
       behavioralNotes: 'Walks calmly on harness; loves veranda sunbathing after morning walk',
       primaryVetContact: 'Waterkloof Veterinary Clinic · +27 12 346 0000',
@@ -285,7 +278,7 @@ export const DEFAULT_ONBOARDING_DOSSIER: ResidenceOnboardingDossier = {
 export const SAMPLE_PORTAL_SESSION: ResidencePortalSession = {
   residenceName: 'Waterkloof Family Residence',
   referenceCode: 'PEH-2026-WKL',
-  datesLabel: '20 Dec 2026 – 28 Dec 2026',
+  datesLabel: '20 Dec 2026 to 28 Dec 2026',
   leadGuardian: 'Pretoria East Family Team Lead',
   teamMembers: CARE_TEAM_MEMBERS,
   petsSummary: '2 × Rhodesian Ridgebacks (Zuri & Rocco)',

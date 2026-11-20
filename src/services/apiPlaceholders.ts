@@ -7,51 +7,29 @@ import {
   QuoteInput,
   ResidenceOnboardingDossier,
 } from '../types/concierge';
+import { apiRequest } from './httpApi';
 
 export interface QuotePayload {
   referenceCode: string;
   quoteInput: QuoteInput;
   breakdown: QuoteBreakdown;
   contact: ClientContactDetails;
+  portalUrl?: string;
 }
 
-export interface PaystackDepositLinkResponse {
+export interface PaystackInvoiceResponse {
   provider: 'paystack';
-  reference: string;
-  authorizationUrl: string;
+  requestCode: string;
   amountZar: number;
   amountKoboOrCents: number;
   currency: 'ZAR';
   expiresAtIso: string;
+  emailSent: boolean;
 }
 
 export interface WhatsAppSummaryResponse {
-  dispatched: boolean;
-  messageId: string;
-  recipientPhone: string;
   whatsappHandoffUrl: string;
   previewText: string;
-}
-
-export interface BookingCalendarPayload {
-  referenceCode: string;
-  residenceName: string;
-  clientName: string;
-  clientEmail: string;
-  checkInDate: string;
-  checkOutDate: string;
-  serviceTierLabel: string;
-  consultationPreferenceLabel: string;
-  addOnsSummary: string[];
-}
-
-export interface GoogleCalendarSyncResponse {
-  synced: boolean;
-  eventId: string;
-  calendarName: string;
-  summary: string;
-  startIso: string;
-  endIso: string;
 }
 
 export interface ConsultationRequestResult {
@@ -59,7 +37,8 @@ export interface ConsultationRequestResult {
   submittedAtIso: string;
   consultationPreferenceLabel: string;
   whatsapp: WhatsAppSummaryResponse;
-  calendar: GoogleCalendarSyncResponse;
+  portalToken: string;
+  portalUrl: string;
   contact: ClientContactDetails;
   quoteInput: QuoteInput;
   breakdown: QuoteBreakdown;
@@ -69,13 +48,7 @@ export interface SupabaseOnboardingSaveResponse {
   saved: boolean;
   dossierId: string;
   savedAtIso: string;
-  targetTable: 'residence_onboarding_dossiers';
-}
-
-export interface SupabasePortalUpdateResponse {
-  saved: boolean;
-  updateId: string;
-  savedAtIso: string;
+  targetTable: 'onboarding_dossiers';
 }
 
 function formatCurrencyZar(amount: number): string {
@@ -85,61 +58,53 @@ function formatCurrencyZar(amount: number): string {
   })}`;
 }
 
-/**
- * Placeholder API: Generates a Paystack checkout link in ZAR once a stay is vetted and confirmed.
- */
-export async function createPaystackDepositLink(
-  quoteData: QuotePayload
-): Promise<PaystackDepositLinkResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 180));
-
-  const amountZar = quoteData.breakdown.indicativeDepositAmount;
-  const amountCents = Math.round(amountZar * 100);
-  const paystackRef = `PSK-${quoteData.referenceCode}`;
-
-  return {
-    provider: 'paystack',
-    reference: paystackRef,
-    authorizationUrl: `https://checkout.paystack.com/demo/${encodeURIComponent(paystackRef)}?amount=${amountCents}&currency=ZAR`,
-    amountZar,
-    amountKoboOrCents: amountCents,
-    currency: 'ZAR',
-    expiresAtIso: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-  };
-}
-
-/**
- * Placeholder API: Generates a Paystack settlement link for the final stay invoice (remaining 50% + incidentals).
- */
-export async function createPaystackFinalInvoiceLink(
+export async function createPaystackDepositInvoice(
   referenceCode: string,
-  amountDueZar: number
-): Promise<PaystackDepositLinkResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 180));
+  teamAccessToken: string
+): Promise<PaystackInvoiceResponse> {
+  return apiRequest('/api/paystack/invoice', {
+    body: JSON.stringify({ quoteRef: referenceCode, paymentType: 'deposit_50' }),
+    teamAccessToken,
+  });
+}
 
-  const amountCents = Math.round(amountDueZar * 100);
-  const paystackRef = `PSK-FINAL-${referenceCode}-${Date.now().toString().slice(-4)}`;
+export async function createPaystackFinalInvoice(
+  referenceCode: string,
+  teamAccessToken: string
+): Promise<PaystackInvoiceResponse> {
+  return apiRequest('/api/paystack/invoice', {
+    body: JSON.stringify({ quoteRef: referenceCode, paymentType: 'final_settlement' }),
+    teamAccessToken,
+  });
+}
 
-  return {
-    provider: 'paystack',
-    reference: paystackRef,
-    authorizationUrl: `https://checkout.paystack.com/demo/${encodeURIComponent(paystackRef)}?amount=${amountCents}&currency=ZAR`,
-    amountZar: amountDueZar,
-    amountKoboOrCents: amountCents,
-    currency: 'ZAR',
-    expiresAtIso: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+export interface ConsultationApiResponse {
+  referenceCode: string;
+  submittedAtIso: string;
+  consultationPreferenceLabel: string;
+  contact: ClientContactDetails;
+  quoteInput: QuoteInput;
+  breakdown: QuoteBreakdown;
+  portalToken: string;
+  stay: {
+    id: string;
+    quoteRef: string;
+    status: string;
   };
 }
 
-/**
- * Placeholder API: Dispatches an itemized WhatsApp quote & free consultation request summary.
- */
-export async function sendWhatsAppQuoteSummary(
-  phone: string,
-  quoteData: QuotePayload
-): Promise<WhatsAppSummaryResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 160));
+export async function createConsultationRequest(
+  quoteInput: QuoteInput,
+  contact: ClientContactDetails
+): Promise<ConsultationApiResponse> {
+  return apiRequest('/api/consultations', {
+    body: JSON.stringify({ quoteInput, contact }),
+  });
+}
 
+export function sendWhatsAppQuoteSummary(
+  quoteData: QuotePayload
+): WhatsAppSummaryResponse {
   const { referenceCode, quoteInput, breakdown, contact } = quoteData;
 
   const consultLabel =
@@ -177,6 +142,7 @@ export async function sendWhatsAppQuoteSummary(
   }
 
   const previewText = [
+    `QUOTE_REF: #${referenceCode}`,
     `Hello ${BRAND_NAME},`,
     `I would like to book a Free Vetting Consultation (${referenceCode}).`,
     `Consultation Preference: ${consultLabel}`,
@@ -188,83 +154,61 @@ export async function sendWhatsAppQuoteSummary(
     `Selected Add-Ons: ${addOns.length > 0 ? addOns.join(' | ') : 'None'}`,
     `Estimated ZAR Quote: ${formatCurrencyZar(breakdown.estimatedTotal)}${breakdown.hasCustomQuotedItems ? ' (+ On-Request Items)' : ''}`,
     `Note: Ready to schedule our free meet-and-greet & pet introduction before locking dates.`,
+    ...(quoteData.portalUrl ? [`Private Client Portal: ${quoteData.portalUrl}`] : []),
   ].join('\n');
 
   const whatsappHandoffUrl = `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(previewText)}`;
 
   return {
-    dispatched: true,
-    messageId: `wamid.${referenceCode.replace(/[^A-Z0-9]/gi, '').toLowerCase()}${Date.now().toString().slice(-4)}`,
-    recipientPhone: phone,
     whatsappHandoffUrl,
     previewText,
   };
 }
 
-/**
- * Placeholder API: Logs a tentative consultation & stay window hold on Google Calendar.
- */
-export async function syncBookingToGoogleCalendar(
-  bookingData: BookingCalendarPayload
-): Promise<GoogleCalendarSyncResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 160));
-
-  const eventId = `gcal_${bookingData.referenceCode.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-
-  return {
-    synced: true,
-    eventId,
-    calendarName: 'Pretoria East Family Concierge Calendar',
-    summary: `[FREE CONSULTATION · ${bookingData.consultationPreferenceLabel}] ${bookingData.clientName} · ${bookingData.residenceName} (${bookingData.referenceCode})`,
-    startIso: `${bookingData.checkInDate}T09:00:00+02:00`,
-    endIso: `${bookingData.checkOutDate}T16:00:00+02:00`,
-  };
-}
-
-/**
- * Placeholder API (Supabase-ready): Persists client Residence & Pet Onboarding Dossier.
- */
 export async function saveResidenceOnboardingDossier(
-  dossier: ResidenceOnboardingDossier
+  dossier: ResidenceOnboardingDossier,
+  referenceCode: string,
+  portalToken?: string,
+  teamAccessToken?: string
 ): Promise<SupabaseOnboardingSaveResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  const savedAtIso = new Date().toISOString();
-  const dossierId =
-    dossier.dossierId || `DOS-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
-
-  return {
-    saved: true,
-    dossierId,
-    savedAtIso,
-    targetTable: 'residence_onboarding_dossiers',
-  };
+  return apiRequest(`/api/portal/${encodeURIComponent(referenceCode)}/onboarding`, {
+    body: JSON.stringify(dossier),
+    portalToken,
+    teamAccessToken,
+  });
 }
 
-/**
- * Placeholder API (Supabase-ready): Publishes a new daily timed update from Team Admin View.
- */
 export async function publishStayDailyUpdate(
-  update: PortalDailyUpdate
-): Promise<SupabasePortalUpdateResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 150));
-  return {
-    saved: true,
-    updateId: update.id,
-    savedAtIso: new Date().toISOString(),
-  };
+  referenceCode: string,
+  update: PortalDailyUpdate,
+  teamAccessToken: string,
+  photoFile?: File
+): Promise<{ update: PortalDailyUpdate }> {
+  const body = new FormData();
+  body.set('slotTitle', update.slotTitle);
+  body.set('guardianName', update.guardianName);
+  body.set('statuses', JSON.stringify(update.statuses));
+  body.set('notes', update.caretakerNotes);
+  if (photoFile) body.set('photo', photoFile);
+  return apiRequest(`/api/portal/${encodeURIComponent(referenceCode)}/updates`, {
+    body,
+    teamAccessToken,
+  });
 }
 
-/**
- * Placeholder API (Supabase-ready): Logs an out-of-pocket incidental expense to the Stay Ledger.
- */
 export async function logStayIncidentalExpense(
-  expense: IncidentalExpenseItem
-): Promise<{ saved: boolean; expenseId: string }> {
-  await new Promise((resolve) => setTimeout(resolve, 150));
-  return {
-    saved: true,
-    expenseId: expense.id,
-  };
+  referenceCode: string,
+  expense: IncidentalExpenseItem,
+  teamAccessToken: string
+): Promise<{ expense: IncidentalExpenseItem }> {
+  return apiRequest(`/api/portal/${encodeURIComponent(referenceCode)}/incidentals`, {
+    body: JSON.stringify({
+      description: expense.description,
+      amountZar: expense.amountZar,
+      loggedBy: expense.loggedBy,
+    }),
+    teamAccessToken,
+  });
 }
 
 export interface UrgentAssistancePayload {
@@ -277,24 +221,18 @@ export interface UrgentAssistancePayload {
 }
 
 export interface UrgentAssistanceResponse {
-  dispatched: boolean;
+  prepared: boolean;
   alertId: string;
-  dispatchedAtIso: string;
-  notifiedRecipients: string[];
+  preparedAtIso: string;
+  intendedRecipients: string[];
   whatsappEscalationUrl: string;
 }
 
-/**
- * Placeholder API: Dispatches an urgent emergency assistance alert to the homeowner's primary & secondary contacts and concierge escalation line.
- * Replace with Twilio SMS / WhatsApp Cloud API / Pager webhook in production.
- */
 export async function triggerUrgentAssistanceAlert(
   payload: UrgentAssistancePayload
 ): Promise<UrgentAssistanceResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 220));
-
   const alertId = `URG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-  const notifiedRecipients = [
+  const intendedRecipients = [
     `${payload.primaryContactName} (${payload.primaryContactPhone})`,
     ...(payload.secondaryContactName.trim() && payload.secondaryContactPhone.trim()
       ? [`${payload.secondaryContactName} (${payload.secondaryContactPhone})`]
@@ -314,10 +252,10 @@ export async function triggerUrgentAssistanceAlert(
     .join('\n');
 
   return {
-    dispatched: true,
+    prepared: true,
     alertId,
-    dispatchedAtIso: new Date().toISOString(),
-    notifiedRecipients,
+    preparedAtIso: new Date().toISOString(),
+    intendedRecipients,
     whatsappEscalationUrl: `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(escalationText)}`,
   };
 }

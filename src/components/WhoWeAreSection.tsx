@@ -77,7 +77,7 @@ export function WhoWeAreSection({ onSelectSuburbForQuote }: WhoWeAreSectionProps
 
                 <p className="text-sm text-[#FAF9F6]/85 leading-relaxed">
                   We are a local Pretoria East dad-and-daughters team who believe your home and pets
-                  deserve real warmth—not a rotating roster of strangers. While I personally handle
+                  deserve real warmth, not a rotating roster of strangers. While I personally handle
                   property oversight, home maintenance, security protocols, and safe private
                   transport, the girls bring endless energy, affection, and supervised playtime for
                   your pets.
@@ -236,7 +236,7 @@ export function WhoWeAreSection({ onSelectSuburbForQuote }: WhoWeAreSectionProps
               </div>
 
               <p className="text-[11px] text-[#FAF9F6]/55 pt-2 border-t border-white/10">
-                Properties located just outside the red boundary are warmly welcome—simply inquire
+                Properties located just outside the red boundary are warmly welcome; simply inquire
                 during your free consultation for custom travel rates.
               </p>
             </div>

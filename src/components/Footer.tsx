@@ -17,7 +17,7 @@ export function Footer({ onNavigateSection, onOpenClientPortal }: FooterProps) {
             </span>
             <p className="text-sm text-[#FAF9F6]/65 max-w-sm leading-relaxed">
               Trusted Pretoria East family offering 24/7 live-in residence care, pet companionship,
-              chauffeur &amp; curated day trips, and Welcome Home refreshes—whether you are away or
+              chauffeur &amp; curated day trips, and Welcome Home refreshes, whether you are away or
               at home.
             </p>
           </div>

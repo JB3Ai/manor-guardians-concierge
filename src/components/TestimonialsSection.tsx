@@ -18,7 +18,7 @@ const PRETORIA_EAST_TESTIMONIALS: ClientTestimonial[] = [
     id: 'test-waterkloof',
     category: 'Travel & Live-In Care',
     quote:
-      'The free in-home meet-and-greet put us at ease immediately—watching the girls gently introduce themselves to both our Ridgebacks meant we actually switched off in Cape Town. Coming home to fresh proteas, crisp linens, and milk and sourdough in the fridge was effortless.',
+      'The free in-home meet-and-greet put us at ease immediately, watching the girls gently introduce themselves to both our Ridgebacks meant we actually switched off in Cape Town. Coming home to fresh proteas, crisp linens, and milk and sourdough in the fridge was effortless.',
     author: 'Dr. Pieter & Nadia Cronjé',
     suburb: 'Waterkloof',
     engagementSummary: '14-Day December Care · 2 Rhodesian Ridgebacks',
@@ -28,7 +28,7 @@ const PRETORIA_EAST_TESTIMONIALS: ClientTestimonial[] = [
     id: 'test-silver-lakes',
     category: 'At-Home Support & Day Trips',
     quote:
-      'We weren’t even traveling over Christmas—we stayed home hosting overseas family and used the concierge for OR Tambo transfers, an Irene Dairy Farm & Acrobranch kids’ outing, extra supervised helpers, and bin/pool upkeep. Worth every Rand.',
+      'We weren’t even traveling over Christmas. We stayed home hosting overseas family and used the concierge for OR Tambo transfers, an Irene Dairy Farm & Acrobranch kids’ outing, extra supervised helpers, and bin/pool upkeep. Worth every Rand.',
     author: 'Claire & Stefan van Rooyen',
     suburb: 'Silver Lakes',
     engagementSummary: 'At-Home December Support · Family Outings & Chauffeur',

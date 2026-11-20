@@ -1,10 +1,9 @@
-import { ChangeEvent, FormEvent, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import {
   Camera,
   CheckCircle2,
   CreditCard,
   Droplets,
-  ExternalLink,
   PawPrint,
   Plus,
   ShieldCheck,
@@ -13,9 +12,10 @@ import {
 } from 'lucide-react';
 import { CARE_TEAM_MEMBERS } from '../../data/services';
 import {
-  createPaystackFinalInvoiceLink,
+  createPaystackDepositInvoice,
+  createPaystackFinalInvoice,
   logStayIncidentalExpense,
-  PaystackDepositLinkResponse,
+  PaystackInvoiceResponse,
   publishStayDailyUpdate,
 } from '../../services/apiPlaceholders';
 import { formatZar } from '../../services/conciergeApi';
@@ -30,9 +30,11 @@ import { ResilientImage } from '../ResilientImage';
 interface LiveStayUpdatesTabProps {
   referenceCode: string;
   datesLabel: string;
+  stayStatus?: string;
   dossier: ResidenceOnboardingDossier;
   updates: PortalDailyUpdate[];
   billing: StayBillingLedger;
+  teamAccessToken?: string;
   onAddUpdate: (update: PortalDailyUpdate) => void;
   onAddIncidental: (expense: IncidentalExpenseItem) => void;
 }
@@ -45,28 +47,14 @@ const UPDATE_SLOT_PRESETS = [
   '05:30 PM Evening Update',
 ];
 
-const SAMPLE_PHOTO_OPTIONS = [
-  { label: 'No photo attached', url: '' },
-  {
-    label: 'Veranda & Pool Pet Check Photo',
-    url: '/images/portal_daily_update_pet_1794747603008.jpg',
-  },
-  {
-    label: 'Terrace Golden Hour Check Photo',
-    url: '/images/service_estate_pet_care_1794747601774.jpg',
-  },
-  {
-    label: 'Kitchen & Welcome Refresh Photo',
-    url: '/images/service_welcome_reset_1794747602927.jpg',
-  },
-];
-
 export function LiveStayUpdatesTab({
   referenceCode,
   datesLabel,
+  stayStatus,
   dossier,
   updates,
   billing,
+  teamAccessToken,
   onAddUpdate,
   onAddIncidental,
 }: LiveStayUpdatesTabProps) {
@@ -78,15 +66,21 @@ export function LiveStayUpdatesTab({
   const [poolAndGarden, setPoolAndGarden] = useState(true);
   const [securityAndPowerOn, setSecurityAndPowerOn] = useState(true);
   const [caretakerNotes, setCaretakerNotes] = useState('');
-  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState(SAMPLE_PHOTO_OPTIONS[1].url);
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState('');
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
   const [isPublishingUpdate, setIsPublishingUpdate] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [isLoggingExpense, setIsLoggingExpense] = useState(false);
 
   const [isSettlingInvoice, setIsSettlingInvoice] = useState(false);
-  const [finalSettlement, setFinalSettlement] = useState<PaystackDepositLinkResponse | null>(
+  const [isCreatingDeposit, setIsCreatingDeposit] = useState(false);
+  const [depositInvoice, setDepositInvoice] = useState<PaystackInvoiceResponse | null>(
+    null
+  );
+  const [finalSettlement, setFinalSettlement] = useState<PaystackInvoiceResponse | null>(
     null
   );
 
@@ -95,10 +89,34 @@ export function LiveStayUpdatesTab({
     0
   );
   const finalInvoiceDueZar = billing.remainingStayBalanceZar + incidentalsTotalZar;
+  const isTeamView = roleMode === 'team' && Boolean(teamAccessToken);
+
+  useEffect(
+    () => () => {
+      if (selectedPhotoUrl.startsWith('blob:')) URL.revokeObjectURL(selectedPhotoUrl);
+    },
+    [selectedPhotoUrl]
+  );
 
   const handleLocalPhotoSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setSelectedPhotoFile(null);
+      setSelectedPhotoUrl('');
+      return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setActionError('Choose a JPEG, PNG, or WebP photo.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setActionError('Choose a photo smaller than 10 MB.');
+      e.target.value = '';
+      return;
+    }
+    setActionError('');
+    setSelectedPhotoFile(file);
     const objectUrl = URL.createObjectURL(file);
     setSelectedPhotoUrl(objectUrl);
   };
@@ -106,8 +124,13 @@ export function LiveStayUpdatesTab({
   const handlePostUpdate = async (e: FormEvent) => {
     e.preventDefault();
     if (!caretakerNotes.trim()) return;
+    if (!teamAccessToken) {
+      setActionError('Sign in as a team administrator to publish a stay update.');
+      return;
+    }
 
     setIsPublishingUpdate(true);
+    setActionError('');
     try {
       const now = new Date();
       const newUpdate: PortalDailyUpdate = {
@@ -129,13 +152,22 @@ export function LiveStayUpdatesTab({
           securityAndPowerOn,
         },
         caretakerNotes: caretakerNotes.trim(),
-        photoUrl: selectedPhotoUrl || undefined,
+        photoUrl: undefined,
         photoAlt: `${slotTitle} update posted by ${guardianName}`,
       };
 
-      await publishStayDailyUpdate(newUpdate);
-      onAddUpdate(newUpdate);
+      const saved = await publishStayDailyUpdate(
+        referenceCode,
+        newUpdate,
+        teamAccessToken,
+        selectedPhotoFile || undefined
+      );
+      onAddUpdate(saved.update);
       setCaretakerNotes('');
+      setSelectedPhotoFile(null);
+      setSelectedPhotoUrl('');
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'The update could not be published.');
     } finally {
       setIsPublishingUpdate(false);
     }
@@ -145,8 +177,13 @@ export function LiveStayUpdatesTab({
     e.preventDefault();
     const numericAmount = Number(expenseAmount);
     if (!expenseDesc.trim() || Number.isNaN(numericAmount) || numericAmount <= 0) return;
+    if (!teamAccessToken) {
+      setActionError('Sign in as a team administrator to log an expense.');
+      return;
+    }
 
     setIsLoggingExpense(true);
+    setActionError('');
     try {
       const item: IncidentalExpenseItem = {
         id: `inc-${Date.now()}`,
@@ -159,26 +196,51 @@ export function LiveStayUpdatesTab({
         loggedBy: guardianName.split(' (')[0],
         amountZar: numericAmount,
       };
-      await logStayIncidentalExpense(item);
-      onAddIncidental(item);
+      const saved = await logStayIncidentalExpense(referenceCode, item, teamAccessToken);
+      onAddIncidental(saved.expense);
       setExpenseDesc('');
       setExpenseAmount('');
       setFinalSettlement(null);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'The expense could not be logged.');
     } finally {
       setIsLoggingExpense(false);
     }
   };
 
   const handleSettleFinalInvoice = async () => {
+    if (!teamAccessToken) {
+      setActionError('Sign in as a team administrator to create an invoice.');
+      return;
+    }
     setIsSettlingInvoice(true);
+    setActionError('');
     try {
-      const response = await createPaystackFinalInvoiceLink(
-        referenceCode,
-        finalInvoiceDueZar
-      );
+      const response = await createPaystackFinalInvoice(referenceCode, teamAccessToken);
       setFinalSettlement(response);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'The invoice could not be created.');
     } finally {
       setIsSettlingInvoice(false);
+    }
+  };
+
+  const handleCreateDepositInvoice = async () => {
+    if (!teamAccessToken) {
+      setActionError('Sign in as a team administrator to create an invoice.');
+      return;
+    }
+    setIsCreatingDeposit(true);
+    setActionError('');
+    try {
+      const response = await createPaystackDepositInvoice(referenceCode, teamAccessToken);
+      setDepositInvoice(response);
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : 'The deposit invoice could not be created.'
+      );
+    } finally {
+      setIsCreatingDeposit(false);
     }
   };
 
@@ -218,25 +280,27 @@ export function LiveStayUpdatesTab({
           >
             Client View
           </button>
-          <button
-            type="button"
-            onClick={() => setRoleMode('team')}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] text-xs sm:text-sm font-medium rounded-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              roleMode === 'team'
-                ? 'bg-[#C5A059] text-[#121212] font-semibold'
-                : 'text-[#FAF9F6]/75 hover:text-[#FAF9F6]'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>Team Admin View</span>
-          </button>
+          {teamAccessToken && (
+            <button
+              type="button"
+              onClick={() => setRoleMode(roleMode === 'team' ? 'client' : 'team')}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] text-xs sm:text-sm font-medium rounded-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                roleMode === 'team'
+                  ? 'bg-[#C5A059] text-[#121212] font-semibold'
+                  : 'text-[#FAF9F6]/75 hover:text-[#FAF9F6]'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>{roleMode === 'team' ? 'Client View' : 'Team Admin View'}</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Main Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-7 space-y-6">
-          {roleMode === 'team' && (
+          {isTeamView && (
             <form
               onSubmit={handlePostUpdate}
               className="bg-[#1A1A1A] border border-[#C5A059]/45 rounded-sm p-6 space-y-5"
@@ -332,52 +396,35 @@ export function LiveStayUpdatesTab({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label
-                    htmlFor="team-photo-preset"
-                    className="block text-xs font-semibold text-[#FAF9F6]/80 mb-1.5"
-                  >
-                    Photo Attachment Preset
-                  </label>
-                  <select
-                    id="team-photo-preset"
-                    value={
-                      SAMPLE_PHOTO_OPTIONS.some((o) => o.url === selectedPhotoUrl)
-                        ? selectedPhotoUrl
-                        : ''
-                    }
-                    onChange={(e) => setSelectedPhotoUrl(e.target.value)}
-                    className="w-full min-h-[44px] px-3 py-2 text-sm bg-[#121212] border border-white/20 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
-                  >
-                    {SAMPLE_PHOTO_OPTIONS.map((opt) => (
-                      <option key={opt.label} value={opt.url}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
                     htmlFor="team-photo-upload"
                     className="block text-xs font-semibold text-[#FAF9F6]/80 mb-1.5"
                   >
-                    Or Attach Device Photo
+                    Attach Stay Photo (Optional)
                   </label>
                   <label
                     htmlFor="team-photo-upload"
                     className="flex items-center justify-center gap-2 w-full min-h-[44px] px-3 py-2 text-xs font-medium bg-[#121212] border border-white/20 hover:border-[#C5A059] rounded-sm text-[#FAF9F6]/85 cursor-pointer transition-colors"
                   >
                     <Camera className="w-4 h-4 text-[#C5A059]" aria-hidden="true" />
-                    <span>Upload Photo Preview</span>
+                    <span>{selectedPhotoFile?.name || 'Choose a JPEG, PNG, or WebP photo'}</span>
                   </label>
                   <input
                     id="team-photo-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={handleLocalPhotoSelect}
                     className="sr-only"
                   />
                 </div>
               </div>
+              {selectedPhotoUrl && (
+                <img
+                  src={selectedPhotoUrl}
+                  alt="Selected stay update"
+                  className="max-h-48 rounded-sm object-cover"
+                />
+              )}
+              {actionError && <p role="alert" className="text-sm text-red-300">{actionError}</p>}
 
               <div>
                 <label
@@ -602,7 +649,7 @@ export function LiveStayUpdatesTab({
             </table>
           </div>
 
-          {roleMode === 'team' && (
+          {isTeamView && (
             <form
               onSubmit={handleLogExpense}
               className="p-4 bg-[#121212] border border-white/15 rounded-sm space-y-3"
@@ -640,38 +687,63 @@ export function LiveStayUpdatesTab({
           )}
 
           <div className="pt-2 space-y-3">
-            <button
-              type="button"
-              onClick={handleSettleFinalInvoice}
-              disabled={isSettlingInvoice}
-              className="flex items-center justify-center gap-2 w-full min-h-[48px] bg-[#C5A059] hover:bg-[#D4B26E] disabled:opacity-60 text-[#121212] font-semibold text-sm px-5 py-3 rounded-sm transition-colors cursor-pointer"
-            >
-              <CreditCard className="w-4 h-4 stroke-[2]" aria-hidden="true" />
-              <span>
-                {isSettlingInvoice
-                  ? 'Preparing Paystack Settlement…'
-                  : `Settle Final Invoice (${formatZar(finalInvoiceDueZar)})`}
-              </span>
-            </button>
+            {isTeamView && stayStatus === 'vetting_approved' && (
+              <button
+                type="button"
+                onClick={handleCreateDepositInvoice}
+                disabled={isCreatingDeposit}
+                className="flex items-center justify-center gap-2 w-full min-h-[48px] border border-[#C5A059] text-[#C5A059] disabled:opacity-60 font-semibold text-sm px-5 py-3 rounded-sm transition-colors cursor-pointer"
+              >
+                <CreditCard className="w-4 h-4 stroke-[2]" aria-hidden="true" />
+                <span>
+                  {isCreatingDeposit
+                    ? 'Preparing Deposit Invoice…'
+                    : 'Create 50% Deposit Invoice'}
+                </span>
+              </button>
+            )}
+            {depositInvoice && (
+              <div className="p-4 bg-[#121212] border border-[#C5A059]/50 rounded-sm space-y-2 text-xs">
+                <p className="font-mono text-[11px] text-[#FAF9F6]/65">
+                  Deposit request: {depositInvoice.requestCode} · {formatZar(depositInvoice.amountZar)} ZAR
+                </p>
+                <p className="text-[11px] text-[#FAF9F6]/65">
+                  {depositInvoice.emailSent
+                    ? 'Paystack emailed the invoice to the client on file.'
+                    : 'Invoice created, but Paystack could not email it. Please resend it from the Paystack dashboard.'}
+                </p>
+              </div>
+            )}
+            {roleMode === 'team' && teamAccessToken && (
+              <button
+                type="button"
+                onClick={handleSettleFinalInvoice}
+                disabled={isSettlingInvoice}
+                className="flex items-center justify-center gap-2 w-full min-h-[48px] bg-[#C5A059] hover:bg-[#D4B26E] disabled:opacity-60 text-[#121212] font-semibold text-sm px-5 py-3 rounded-sm transition-colors cursor-pointer"
+              >
+                <CreditCard className="w-4 h-4 stroke-[2]" aria-hidden="true" />
+                <span>
+                  {isSettlingInvoice
+                    ? 'Preparing Paystack Settlement…'
+                    : `Create Final Invoice (${formatZar(finalInvoiceDueZar)})`}
+                </span>
+              </button>
+            )}
 
             {finalSettlement && (
               <div className="p-4 bg-[#121212] border border-[#C5A059]/50 rounded-sm space-y-2 text-xs">
                 <div className="flex items-center gap-2 font-semibold text-[#FAF9F6]">
                   <CheckCircle2 className="w-4 h-4 text-[#C5A059]" aria-hidden="true" />
-                  <span>Paystack Settlement Link Ready</span>
+                  <span>Paystack Settlement Invoice Created</span>
                 </div>
                 <p className="font-mono text-[11px] text-[#FAF9F6]/65">
-                  Ref: {finalSettlement.reference} · {formatZar(finalSettlement.amountZar)} ZAR
+                  Request: {finalSettlement.requestCode} · {formatZar(finalSettlement.amountZar)} ZAR
                 </p>
-                <a
-                  href={finalSettlement.authorizationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[#C5A059] hover:text-[#D4B26E] font-semibold pt-1"
-                >
-                  <span>Proceed to Paystack Checkout</span>
-                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                </a>
+                <p className="text-[11px] text-[#FAF9F6]/65">
+                  {finalSettlement.emailSent
+                    ? 'Paystack emailed the invoice to the client on file.'
+                    : 'Invoice created, but Paystack could not email it. Please resend it from the Paystack dashboard.'}
+                </p>
               </div>
             )}
 

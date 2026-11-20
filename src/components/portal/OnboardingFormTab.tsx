@@ -26,6 +26,9 @@ import {
 
 interface OnboardingFormTabProps {
   dossier: ResidenceOnboardingDossier;
+  referenceCode: string;
+  portalToken?: string;
+  teamAccessToken?: string;
   onSaveDossier: (saved: ResidenceOnboardingDossier) => void;
   onSwitchToLiveStay: () => void;
 }
@@ -40,6 +43,9 @@ const STEP_META = [
 
 export function OnboardingFormTab({
   dossier,
+  referenceCode,
+  portalToken,
+  teamAccessToken,
   onSaveDossier,
   onSwitchToLiveStay,
 }: OnboardingFormTabProps) {
@@ -168,7 +174,12 @@ export function OnboardingFormTab({
     setErrors([]);
     setIsSaving(true);
     try {
-      const response = await saveResidenceOnboardingDossier(draft);
+      const response = await saveResidenceOnboardingDossier(
+        draft,
+        referenceCode,
+        portalToken,
+        teamAccessToken
+      );
       const savedRecord: ResidenceOnboardingDossier = {
         ...draft,
         dossierId: response.dossierId,
@@ -183,6 +194,10 @@ export function OnboardingFormTab({
           minute: '2-digit',
         }),
       });
+    } catch (error) {
+      setErrors([
+        error instanceof Error ? error.message : 'The onboarding dossier could not be saved.',
+      ]);
     } finally {
       setIsSaving(false);
     }
@@ -483,7 +498,7 @@ export function OnboardingFormTab({
                               e.target.value
                             )
                           }
-                          placeholder="e.g. 07:00 & 17:30 — 320g Acana Adult + salmon oil"
+                          placeholder="e.g. 07:00 & 17:30: 320g Acana Adult + salmon oil"
                           className="w-full min-h-[42px] px-3 py-2 text-sm bg-[#1A1A1A] border border-white/15 rounded-sm text-[#FAF9F6] focus:outline-none focus:border-[#C5A059]"
                         />
                       </div>
@@ -895,7 +910,7 @@ export function OnboardingFormTab({
               className="inline-flex items-center justify-center gap-2 min-h-[46px] px-6 py-2.5 bg-[#C5A059] hover:bg-[#D4B26E] disabled:opacity-60 text-[#121212] font-semibold text-sm rounded-sm transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               <BellRing className="w-4 h-4 stroke-[2]" aria-hidden="true" />
-              <span>{isNotifying ? 'Dispatching Alert…' : 'Notify'}</span>
+              <span>{isNotifying ? 'Preparing WhatsApp Draft…' : 'Prepare WhatsApp Alert'}</span>
             </button>
           </div>
 
@@ -913,10 +928,10 @@ export function OnboardingFormTab({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-[#FAF9F6] flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-[#C5A059]" aria-hidden="true" />
-                  Urgent Assistance Alert Dispatched ({urgentAlertResult.alertId})
+                  WhatsApp Alert Draft Ready ({urgentAlertResult.alertId})
                 </span>
                 <span className="font-mono text-[11px] text-[#FAF9F6]/60">
-                  {new Date(urgentAlertResult.dispatchedAtIso).toLocaleTimeString('en-ZA', {
+                  {new Date(urgentAlertResult.preparedAtIso).toLocaleTimeString('en-ZA', {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}{' '}
@@ -924,7 +939,7 @@ export function OnboardingFormTab({
                 </span>
               </div>
               <p className="text-[#FAF9F6]/75">
-                Notified: {urgentAlertResult.notifiedRecipients.join(' · ')}
+                Intended recipients: {urgentAlertResult.intendedRecipients.join(' · ')}
               </p>
               <a
                 href={urgentAlertResult.whatsappEscalationUrl}
@@ -932,7 +947,7 @@ export function OnboardingFormTab({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-[#C5A059] hover:text-[#D4B26E] font-semibold pt-1"
               >
-                <span>Open Urgent WhatsApp Escalation Thread</span>
+                <span>Open WhatsApp Draft to Send Manually</span>
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               </a>
             </div>

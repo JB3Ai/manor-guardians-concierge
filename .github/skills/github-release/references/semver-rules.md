@@ -10,11 +10,11 @@ Reference: https://semver.org/
 vMAJOR.MINOR.PATCH
 ```
 
-- **MAJOR** — incompatible API changes
-- **MINOR** — new backward-compatible functionality
-- **PATCH** — backward-compatible bug fixes
+- **MAJOR**: incompatible API changes
+- **MINOR**: new backward-compatible functionality
+- **PATCH**: backward-compatible bug fixes
 
-Pre-1.0 note: if the current version is `0.x.y`, anything goes — MINOR bumps are
+Pre-1.0 note: if the current version is `0.x.y`, anything goes. MINOR bumps are
 common for breaking changes. Once past `1.0.0`, the rules below apply strictly.
 
 ---
@@ -47,7 +47,7 @@ change than to silently break consumers.
 - Adding optional parameters to an existing function (with backward-compatible defaults)
 - Implementing a new protocol/interface that doesn't affect existing ones
 - Adding new configuration keys with sensible defaults
-- Deprecating (but not removing) a public API — removal comes in a future MAJOR
+- Deprecating (but not removing) a public API; removal comes in a future MAJOR
 
 ---
 
@@ -63,7 +63,7 @@ change than to silently break consumers.
 
 ---
 
-## Multiple changes — precedence
+## Multiple changes: precedence
 
 When a release contains a mix of change types, the **highest precedence** wins:
 

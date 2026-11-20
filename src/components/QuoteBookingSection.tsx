@@ -324,8 +324,12 @@ export function QuoteBookingSection({
     setFormErrors([]);
     setIsSubmitting(true);
     try {
-      const result = await requestFreeConsultation(quoteInput, contact, breakdown);
+      const result = await requestFreeConsultation(quoteInput, contact);
       setModalResult(result);
+    } catch (error) {
+      setFormErrors([
+        error instanceof Error ? error.message : 'The consultation request could not be saved.',
+      ]);
     } finally {
       setIsSubmitting(false);
     }
@@ -375,7 +379,7 @@ export function QuoteBookingSection({
             className="inline-flex items-center gap-2 self-start lg:self-auto text-xs sm:text-sm font-medium text-[#121212] border border-[#121212]/20 hover:border-[#C5A059] bg-white px-4 py-2.5 min-h-[44px] rounded-sm transition-colors cursor-pointer whitespace-nowrap shrink-0"
           >
             <Calendar className="w-4 h-4 text-[#A6833E]" aria-hidden="true" />
-            <span>Preview Dec 20 – Dec 30 Festive Dates</span>
+            <span>Preview Dec 20 to Dec 30 Festive Dates</span>
           </button>
         </div>
 
@@ -418,7 +422,7 @@ export function QuoteBookingSection({
                     },
                     {
                       id: 'at-home-support' as StayContextMode,
-                      title: 'We Are at Home — Offload Chores',
+                      title: 'We Are at Home: Offload Chores',
                       desc: 'Help with errands, hosting prep, school runs & outings',
                       icon: Home,
                     },
@@ -506,7 +510,7 @@ export function QuoteBookingSection({
                     <strong className="font-semibold text-[#8A6A2B]">
                       Peak Festive Window Detected:
                     </strong>{' '}
-                    {breakdown.peakFestiveDays} of {breakdown.totalDays} days fall within Dec 20 –
+                    {breakdown.peakFestiveDays} of {breakdown.totalDays} days fall within Dec 20 to
                     Jan 2 (+25% surcharge).
                   </span>
                   <span className="font-semibold text-[#8A6A2B] whitespace-nowrap">
@@ -763,8 +767,8 @@ export function QuoteBookingSection({
                   04. Free Vetting Consultation &amp; Contact Details
                 </h3>
                 <p className="text-xs sm:text-sm text-[#121212]/65 mb-4">
-                  All new clients meet our family first—including a mandatory pet introduction
-                  session—before any dates are locked or invoiced.
+                  All new clients meet our family first, including a mandatory pet introduction
+                  session, before any dates are locked or invoiced.
                 </p>
 
                 <div
@@ -1044,10 +1048,13 @@ export function QuoteBookingSection({
                   <div>
                     <dt className="text-[#FAF9F6]">Curated Day Trips &amp; Outings</dt>
                     <dd className="text-xs text-[#FAF9F6]/60">
+                      {quoteInput.selectedDayTrips.length} × R1,200 ·{' '}
                       {quoteInput.selectedDayTrips.join(', ')}
                     </dd>
                   </div>
-                  <dd className="font-medium text-[#C5A059] whitespace-nowrap">On Request</dd>
+                  <dd className="font-medium text-[#FAF9F6] whitespace-nowrap">
+                    {formatZar(breakdown.dayTripSubtotal)}
+                  </dd>
                 </div>
               )}
 
@@ -1075,7 +1082,7 @@ export function QuoteBookingSection({
                       Peak Festive Surcharge (+25%)
                     </dt>
                     <dd className="text-xs text-[#FAF9F6]/60">
-                      Dec 20 – Jan 2 ({breakdown.peakFestiveDays} festive{' '}
+                      Dec 20 to Jan 2 ({breakdown.peakFestiveDays} festive{' '}
                       {breakdown.peakFestiveDays === 1 ? 'day' : 'days'})
                     </dd>
                   </div>

@@ -53,7 +53,7 @@ const FAQ_ITEMS: FaqItem[] = [
     category: 'Vetting & Booking',
     question: 'Do we have to be away on holiday to book Pretoria East Home & Pet Concierge?',
     answer:
-      'Not at all. Many local families book us while they are right at home—especially in December—to offload municipal bin days, pool upkeep, window washing, airport pickups, trusted school/activity runs, supervised family helpers, or guided day trips for visiting relatives and children.',
+      'Not at all. Many local families book us while they are right at home, especially in December, to offload municipal bin days, pool upkeep, window washing, airport pickups, trusted school/activity runs, supervised family helpers, or guided day trips for visiting relatives and children.',
   },
   {
     id: 'faq-payment-deposit',
@@ -61,7 +61,7 @@ const FAQ_ITEMS: FaqItem[] = [
     category: 'Vetting & Booking',
     question: 'When are the 50% booking deposit and out-of-pocket incidentals settled?',
     answer:
-      'Only after your free consultation is approved do we issue a formal invoice for the 50% deposit to lock your calendar dates. The remaining 50% stay balance—plus any pre-approved, receipted incidentals like pool chlorine or your Woolworths Welcome Home groceries—is itemized transparently in your Client Portal ledger and settled at the end of your stay.',
+      'Only after your free consultation is approved do we issue a formal invoice for the 50% deposit to lock your calendar dates. The remaining 50% stay balance, plus any pre-approved, receipted incidentals like pool chlorine or your Woolworths Welcome Home groceries, is itemized transparently in your Client Portal ledger and settled at the end of your stay.',
   },
   {
     id: 'faq-vehicle-chauffeur',
@@ -69,7 +69,7 @@ const FAQ_ITEMS: FaqItem[] = [
     category: 'Insurance & Security',
     question: 'Is private chauffeur transport & airport transfer coverage insured and reliable?',
     answer:
-      'Yes. Every OR Tambo, Lanseria, school-run, or curated day-trip transfer is driven personally by our vetted family team—never outsourced to unknown ride-share drivers. We track flight arrivals in real time, confirm every pickup via WhatsApp, and maintain full passenger and vehicle cover.',
+      'Yes. Every OR Tambo, Lanseria, school-run, or curated day-trip transfer is driven personally by our vetted family team, never outsourced to unknown ride-share drivers. We track flight arrivals in real time, confirm every pickup via WhatsApp, and maintain full passenger and vehicle cover.',
   },
   {
     id: 'faq-boundary-coverage',

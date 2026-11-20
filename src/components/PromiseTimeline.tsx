@@ -6,7 +6,7 @@ const TIMELINE_STEPS = [
     title: 'Instant Estimate & Free Vetting Consultation',
     subtitle: 'Online video call or in-home meet & greet + pet introduction',
     description:
-      'Use our calculator to estimate your ZAR tariff and pick your services. We never charge upfront online—every new client starts with a free meet-and-greet and mandatory pet introduction so your animals feel relaxed and safe with our family.',
+      'Use our calculator to estimate your ZAR tariff and pick your services. We never charge upfront online. Every new client starts with a free meet-and-greet and mandatory pet introduction so your animals feel relaxed and safe with our family.',
     icon: Handshake,
   },
   {
@@ -22,7 +22,7 @@ const TIMELINE_STEPS = [
     title: 'Daily Photo Updates & Welcome Refresh',
     subtitle: '08:00 & 18:00 WhatsApp dispatches · Flowers & pantry stocked',
     description:
-      'Receive punctual morning and evening photo updates while away—or enjoy effortless at-home chore, school-run, and hosting support—finishing with fresh bread, milk, crisp linens, and fresh flowers waiting for you.',
+      'Receive punctual morning and evening photo updates while away, or enjoy effortless at-home chore, school-run, and hosting support. Your stay finishes with fresh bread, milk, crisp linens, and fresh flowers waiting for you.',
     icon: Camera,
   },
 ];
@@ -49,7 +49,7 @@ export function PromiseTimeline() {
             Free Vetting Consultation First, Zero Upfront Pressure
           </h2>
           <p className="text-sm sm:text-base text-[#121212]/70 leading-relaxed">
-            Built around personal trust for Pretoria East families—whether you are flying abroad or
+            Built around personal trust for Pretoria East families, whether you are flying abroad or
             staying home and reclaiming your December weekends.
           </p>
         </div>

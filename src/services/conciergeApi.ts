@@ -1,25 +1,18 @@
-import { PRICING_RATES, SAMPLE_PORTAL_SESSION, WHATSAPP_BASE_URL } from '../data/services';
+import { WHATSAPP_BASE_URL } from '../data/services';
 import {
   ClientContactDetails,
-  QuoteBreakdown,
   QuoteInput,
-  ResidencePortalSession,
+  ResidencePortalData,
 } from '../types/concierge';
 import {
   ConsultationRequestResult,
+  createConsultationRequest,
   sendWhatsAppQuoteSummary,
-  syncBookingToGoogleCalendar,
 } from './apiPlaceholders';
+import { calculateQuoteBreakdown } from './quoteCalculator';
 
-/**
- * Checks if a given calendar date falls within the Peak Festive window:
- * December 20 through January 2 (inclusive).
- */
-export function isPeakFestiveNight(date: Date): boolean {
-  const month = date.getMonth(); // 0-indexed: 11 = Dec, 0 = Jan
-  const day = date.getDate();
-  return (month === 11 && day >= 20) || (month === 0 && day <= 2);
-}
+export { calculateQuoteBreakdown, isPeakFestiveNight } from './quoteCalculator';
+import { getClientPortalSession } from './portalApi';
 
 export function formatZar(amount: number): string {
   return new Intl.NumberFormat('en-ZA', {
@@ -33,89 +26,6 @@ export function formatZar(amount: number): string {
     .replace(/\s+/g, '');
 }
 
-export function calculateQuoteBreakdown(input: QuoteInput): QuoteBreakdown {
-  const start = new Date(`${input.checkInDate}T00:00:00`);
-  const end = new Date(`${input.checkOutDate}T00:00:00`);
-
-  let standardDays = 0;
-  let peakFestiveDays = 0;
-
-  if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end > start) {
-    const cursor = new Date(start);
-    let safety = 0;
-    while (cursor < end && safety < 180) {
-      if (isPeakFestiveNight(cursor)) {
-        peakFestiveDays += 1;
-      } else {
-        standardDays += 1;
-      }
-      cursor.setDate(cursor.getDate() + 1);
-      safety += 1;
-    }
-  }
-
-  const totalDays = standardDays + peakFestiveDays;
-  const dailyRateZar =
-    input.baseTier === 'vip-24-7'
-      ? PRICING_RATES.vipDailyRateZar
-      : PRICING_RATES.dailyDropInRateZar;
-  const baseTierLabel =
-    input.baseTier === 'vip-24-7'
-      ? '24/7 Live-In Residence & Pet Care'
-      : 'Daily Check-In Visits';
-
-  const baseCareSubtotal = totalDays * dailyRateZar;
-  const peakSurchargeSubtotal =
-    peakFestiveDays * dailyRateZar * PRICING_RATES.peakFestiveSurchargeRate;
-
-  const airportTransferSubtotal =
-    Math.max(0, input.airportTrips) * PRICING_RATES.airportTransferTripZar;
-  const welcomeResetSubtotal = input.includeWelcomeReset
-    ? PRICING_RATES.welcomeHomeResetFlatZar
-    : 0;
-  const preArrivalMaintenanceSubtotal = input.includePreArrivalMaintenance
-    ? PRICING_RATES.preArrivalMaintenanceFlatZar
-    : 0;
-  const conciergeDrivingSubtotal =
-    Math.max(0, input.errandHours) * PRICING_RATES.conciergeDrivingHourlyZar +
-    Math.max(0, input.errandKilometers) * PRICING_RATES.conciergeDrivingPerKmZar;
-
-  const subtotalBeforePeak =
-    baseCareSubtotal +
-    airportTransferSubtotal +
-    welcomeResetSubtotal +
-    preArrivalMaintenanceSubtotal +
-    conciergeDrivingSubtotal;
-
-  const estimatedTotal = subtotalBeforePeak + peakSurchargeSubtotal;
-  const indicativeDepositAmount = estimatedTotal * PRICING_RATES.depositPercentage;
-  const balanceOnCompletion = estimatedTotal - indicativeDepositAmount;
-
-  const hasCustomQuotedItems =
-    input.selectedDayTrips.length > 0 || input.requestedSpecialistServices.length > 0;
-
-  return {
-    baseTier: input.baseTier,
-    baseTierLabel,
-    dailyRateZar,
-    totalDays,
-    standardDays,
-    peakFestiveDays,
-    baseCareSubtotal,
-    peakSurchargeSubtotal,
-    airportTransferSubtotal,
-    welcomeResetSubtotal,
-    preArrivalMaintenanceSubtotal,
-    conciergeDrivingSubtotal,
-    subtotalBeforePeak,
-    estimatedTotal,
-    indicativeDepositAmount,
-    balanceOnCompletion,
-    hasFestiveDates: peakFestiveDays > 0,
-    hasCustomQuotedItems,
-  };
-}
-
 export function buildWhatsAppUrl(message?: string): string {
   if (!message) {
     return WHATSAPP_BASE_URL;
@@ -124,102 +34,48 @@ export function buildWhatsAppUrl(message?: string): string {
 }
 
 /**
- * Free Vetting Consultation First:
- * Sends the estimated quote + consultation preference to WhatsApp & logs a tentative calendar hold.
- * No upfront online payment is charged prior to the meet-and-greet & pet introduction.
+ * Persists a free consultation request, then prepares the WhatsApp handoff.
  */
 export async function requestFreeConsultation(
   quoteInput: QuoteInput,
-  contact: ClientContactDetails,
-  breakdown: QuoteBreakdown
+  contact: ClientContactDetails
 ): Promise<ConsultationRequestResult> {
-  const suffix = Math.floor(1000 + Math.random() * 9000);
-  const referenceCode = `PEH-${new Date().getFullYear()}-${suffix}`;
-
-  const consultationPreferenceLabel =
-    quoteInput.consultationPreference === 'in-home-meet-greet'
-      ? 'In-Home Meet & Greet (Includes Pet Introduction)'
-      : 'Online Video Call Consultation';
-
-  const addOnsSummary: string[] = [];
-  if (quoteInput.airportTrips > 0) {
-    addOnsSummary.push(`Airport Transfers (${quoteInput.airportTrips} trips)`);
-  }
-  if (quoteInput.includeWelcomeReset) {
-    addOnsSummary.push('Welcome Home Refresh');
-  }
-  if (quoteInput.includePreArrivalMaintenance) {
-    addOnsSummary.push('Pre-Arrival Power Wash / Minor Maintenance');
-  }
-  if (quoteInput.selectedDayTrips.length > 0) {
-    addOnsSummary.push(`Day Trips: ${quoteInput.selectedDayTrips.join(', ')}`);
-  }
-  if (quoteInput.requestedSpecialistServices.length > 0) {
-    addOnsSummary.push(`Specialist Staff/Services: ${quoteInput.requestedSpecialistServices.length}`);
-  }
-
-  const quotePayload = {
-    referenceCode,
-    quoteInput,
-    breakdown,
-    contact,
-  };
-
-  const [whatsapp, calendar] = await Promise.all([
-    sendWhatsAppQuoteSummary(contact.whatsappPhone, quotePayload),
-    syncBookingToGoogleCalendar({
-      referenceCode,
-      residenceName: contact.suburbOrResidence,
-      clientName: contact.fullName,
-      clientEmail: contact.email,
-      checkInDate: quoteInput.checkInDate,
-      checkOutDate: quoteInput.checkOutDate,
-      serviceTierLabel: breakdown.baseTierLabel,
-      consultationPreferenceLabel,
-      addOnsSummary,
-    }),
-  ]);
+  const saved = await createConsultationRequest(quoteInput, contact);
+  const portal = new URL('/portal', window.location.origin);
+  portal.searchParams.set('ref', saved.referenceCode);
+  portal.searchParams.set('token', saved.portalToken);
+  const portalUrl = portal.toString();
+  const whatsapp = sendWhatsAppQuoteSummary({
+    referenceCode: saved.referenceCode,
+    quoteInput: saved.quoteInput,
+    breakdown: saved.breakdown,
+    contact: saved.contact,
+    portalUrl,
+  });
 
   return {
-    referenceCode,
-    submittedAtIso: new Date().toISOString(),
-    consultationPreferenceLabel,
+    referenceCode: saved.referenceCode,
+    submittedAtIso: saved.submittedAtIso,
+    consultationPreferenceLabel: saved.consultationPreferenceLabel,
     whatsapp,
-    calendar,
-    contact,
-    quoteInput,
-    breakdown,
+    portalToken: saved.portalToken,
+    portalUrl,
+    contact: saved.contact,
+    quoteInput: saved.quoteInput,
+    breakdown: saved.breakdown,
   };
 }
 
-/**
- * Modular API boundary for Client Portal lookup.
- */
 export async function fetchClientPortalSession(
   referenceCode: string,
-  email: string
-): Promise<{ ok: true; session: ResidencePortalSession } | { ok: false; error: string }> {
-  await new Promise((resolve) => setTimeout(resolve, 250));
-
-  const normalizedRef = referenceCode.trim().toUpperCase();
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!normalizedRef) {
-    return {
-      ok: false,
-      error: 'Please enter your residence booking reference (e.g. PEH-2026-WKL).',
-    };
+  portalToken?: string,
+  teamAccessToken?: string
+): Promise<ResidencePortalData> {
+  if (!referenceCode.trim()) {
+    throw new Error('Please enter your residence booking reference.');
   }
-  if (!normalizedEmail || !normalizedEmail.includes('@')) {
-    return { ok: false, error: 'Please enter the email address registered during onboarding.' };
+  if (!portalToken && !teamAccessToken) {
+    throw new Error('Open your private client portal link or sign in as a team administrator.');
   }
-
-  if (normalizedRef === SAMPLE_PORTAL_SESSION.referenceCode) {
-    return { ok: true, session: SAMPLE_PORTAL_SESSION };
-  }
-
-  return {
-    ok: false,
-    error: `No active file found for "${normalizedRef}". Use sample code PEH-2026-WKL to preview a live residence log, or contact WhatsApp Concierge.`,
-  };
+  return getClientPortalSession(referenceCode.trim(), portalToken, teamAccessToken);
 }

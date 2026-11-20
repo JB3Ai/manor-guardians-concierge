@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import {
-  CalendarCheck2,
   CheckCircle2,
+  ExternalLink,
   Handshake,
   MessageCircle,
   X,
@@ -50,7 +50,7 @@ export function BookingConfirmationModal({
             />
             <div>
               <p className="text-xs font-medium tracking-[0.14em] uppercase text-[#C5A059]">
-                Free Consultation Request Prepared
+                Free Consultation Request Saved
               </p>
               <h3
                 id="booking-modal-title"
@@ -121,17 +121,32 @@ export function BookingConfirmationModal({
             </div>
 
             <div className="flex items-start gap-2.5 p-3 bg-[#181818] border border-white/10 rounded-sm">
-              <CalendarCheck2
+              <CheckCircle2
                 className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5"
                 aria-hidden="true"
               />
               <div>
                 <p className="font-semibold text-[#FAF9F6]">
-                  Provisional Calendar Hold Logged
+                  Consultation Request Recorded
                 </p>
                 <p className="text-[11px] text-[#FAF9F6]/60 mt-0.5">
-                  {result.calendar.summary}
+                  Your consultation request and estimated stay have been saved securely for our team.
                 </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5 p-3 bg-[#181818] border border-white/10 rounded-sm">
+              <ExternalLink
+                className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
+              <div>
+                <p className="font-semibold text-[#FAF9F6]">Your Private Client Portal</p>
+                <a
+                  href={result.portalUrl}
+                  className="text-[11px] text-[#C5A059] underline underline-offset-2 break-all mt-0.5 inline-block"
+                >
+                  Open your secure portal link
+                </a>
               </div>
             </div>
           </div>
