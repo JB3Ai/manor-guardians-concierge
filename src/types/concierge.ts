@@ -153,6 +153,7 @@ export interface IncidentalExpenseItem {
   description: string;
   loggedBy: string;
   amountZar: number;
+  receiptUrl?: string;
 }
 
 export interface StayBillingLedger {

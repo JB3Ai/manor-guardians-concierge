@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import {
   Camera,
   CheckCircle2,
@@ -35,6 +35,7 @@ interface LiveStayUpdatesTabProps {
   updates: PortalDailyUpdate[];
   billing: StayBillingLedger;
   teamAccessToken?: string;
+  portalToken?: string;
   onAddUpdate: (update: PortalDailyUpdate) => void;
   onAddIncidental: (expense: IncidentalExpenseItem) => void;
 }
@@ -55,6 +56,7 @@ export function LiveStayUpdatesTab({
   updates,
   billing,
   teamAccessToken,
+  portalToken,
   onAddUpdate,
   onAddIncidental,
 }: LiveStayUpdatesTabProps) {
@@ -73,6 +75,8 @@ export function LiveStayUpdatesTab({
 
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
   const [isLoggingExpense, setIsLoggingExpense] = useState(false);
 
   const [isSettlingInvoice, setIsSettlingInvoice] = useState(false);
@@ -83,6 +87,7 @@ export function LiveStayUpdatesTab({
   const [finalSettlement, setFinalSettlement] = useState<PaystackInvoiceResponse | null>(
     null
   );
+  const [privateMediaUrls, setPrivateMediaUrls] = useState<Record<string, string>>({});
 
   const incidentalsTotalZar = billing.incidentals.reduce(
     (sum, item) => sum + item.amountZar,
@@ -97,6 +102,47 @@ export function LiveStayUpdatesTab({
     },
     [selectedPhotoUrl]
   );
+
+  useEffect(() => {
+    let active = true;
+    const objectUrls: string[] = [];
+    const loadPhotos = async () => {
+      const entries = [
+        ...updates
+          .filter((entry) => entry.photoUrl)
+          .map((entry) => ({ id: entry.id, url: entry.photoUrl as string })),
+        ...billing.incidentals
+          .filter((expense) => expense.receiptUrl)
+          .map((expense) => ({ id: expense.id, url: expense.receiptUrl as string })),
+      ];
+      const loaded = await Promise.all(
+        entries.map(async (entry) => {
+          const response = await fetch(entry.url, {
+            headers: {
+              ...(portalToken ? { 'X-Portal-Token': portalToken } : {}),
+              ...(teamAccessToken ? { Authorization: `Bearer ${teamAccessToken}` } : {}),
+            },
+          });
+          if (!response.ok) throw new Error('A private residence photo could not be loaded.');
+          const objectUrl = URL.createObjectURL(await response.blob());
+          objectUrls.push(objectUrl);
+          return [entry.id, objectUrl] as const;
+        })
+      );
+      if (active) setPrivateMediaUrls(Object.fromEntries(loaded));
+    };
+    void loadPhotos().catch((error: unknown) => {
+      if (active) {
+        setActionError(
+          error instanceof Error ? error.message : 'A private residence photo could not be loaded.'
+        );
+      }
+    });
+    return () => {
+      active = false;
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [billing.incidentals, portalToken, teamAccessToken, updates]);
 
   const handleLocalPhotoSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -196,10 +242,17 @@ export function LiveStayUpdatesTab({
         loggedBy: guardianName.split(' (')[0],
         amountZar: numericAmount,
       };
-      const saved = await logStayIncidentalExpense(referenceCode, item, teamAccessToken);
+      const saved = await logStayIncidentalExpense(
+        referenceCode,
+        item,
+        teamAccessToken,
+        receiptFile || undefined
+      );
       onAddIncidental(saved.expense);
       setExpenseDesc('');
       setExpenseAmount('');
+      setReceiptFile(null);
+      if (receiptInputRef.current) receiptInputRef.current.value = '';
       setFinalSettlement(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'The expense could not be logged.');
@@ -461,10 +514,10 @@ export function LiveStayUpdatesTab({
                 key={entry.id}
                 className="bg-[#1A1A1A] border border-white/10 rounded-sm overflow-hidden"
               >
-                {entry.photoUrl && (
+                {entry.photoUrl && privateMediaUrls[entry.id] && (
                   <div className="aspect-[16/9] w-full bg-[#121212]">
                     <ResilientImage
-                      src={entry.photoUrl}
+                      src={privateMediaUrls[entry.id]}
                       alt={entry.photoAlt || entry.slotTitle}
                       fallbackTitle={entry.slotTitle}
                       className="w-full h-full object-cover"
@@ -623,6 +676,15 @@ export function LiveStayUpdatesTab({
                       <div className="text-[11px] text-[#FAF9F6]/55">
                         {exp.dateLabel} · Logged by {exp.loggedBy}
                       </div>
+                      {exp.receiptUrl && privateMediaUrls[exp.id] && (
+                        <a
+                          href={privateMediaUrls[exp.id]}
+                          download
+                          className="inline-block mt-1 text-[11px] text-[#C5A059] hover:text-[#D4B26E]"
+                        >
+                          View till slip
+                        </a>
+                      )}
                     </td>
                     <td className="py-3 text-right text-[#FAF9F6]">
                       +{formatZar(exp.amountZar)}
@@ -675,6 +737,24 @@ export function LiveStayUpdatesTab({
                   className="min-h-[40px] px-3 py-2 text-xs bg-[#1A1A1A] border border-white/15 rounded-sm text-[#FAF9F6] tabular-nums focus:outline-none focus:border-[#C5A059]"
                 />
               </div>
+              <input
+                ref={receiptInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  if (file && file.size > 10 * 1024 * 1024) {
+                    setActionError('Choose a till slip smaller than 10 MB.');
+                    event.target.value = '';
+                    setReceiptFile(null);
+                    return;
+                  }
+                  setActionError('');
+                  setReceiptFile(file);
+                }}
+                aria-label="Optional till slip or receipt"
+                className="w-full text-xs text-[#FAF9F6]/70 file:mr-3 file:px-3 file:py-2 file:bg-[#1A1A1A] file:border file:border-white/15 file:text-[#FAF9F6]/80"
+              />
               <button
                 type="submit"
                 disabled={isLoggingExpense || !expenseDesc.trim() || !expenseAmount}

@@ -1,0 +1,9 @@
+# Copy to .dev.vars for local Wrangler development. Do not commit .dev.vars.
+ADMIN_PASSWORD=change-this-local-admin-password
+JWT_SECRET=replace-with-a-long-random-secret
+PAYSTACK_SECRET_KEY=
+WHATSAPP_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+WEBHOOK_VERIFY_TOKEN=
+META_APP_SECRET=
+GOOGLE_CALENDAR_ID=

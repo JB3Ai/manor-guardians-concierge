@@ -199,14 +199,26 @@ export async function publishStayDailyUpdate(
 export async function logStayIncidentalExpense(
   referenceCode: string,
   expense: IncidentalExpenseItem,
-  teamAccessToken: string
+  teamAccessToken: string,
+  receiptFile?: File
 ): Promise<{ expense: IncidentalExpenseItem }> {
-  return apiRequest(`/api/portal/${encodeURIComponent(referenceCode)}/incidentals`, {
-    body: JSON.stringify({
+  let body: BodyInit;
+  if (receiptFile) {
+    const form = new FormData();
+    form.set('description', expense.description);
+    form.set('amountZar', String(expense.amountZar));
+    form.set('loggedBy', expense.loggedBy);
+    form.set('receipt', receiptFile);
+    body = form;
+  } else {
+    body = JSON.stringify({
       description: expense.description,
       amountZar: expense.amountZar,
       loggedBy: expense.loggedBy,
-    }),
+    });
+  }
+  return apiRequest(`/api/portal/${encodeURIComponent(referenceCode)}/incidentals`, {
+    body,
     teamAccessToken,
   });
 }

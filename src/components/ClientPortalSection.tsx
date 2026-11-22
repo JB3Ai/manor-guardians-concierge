@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Session } from '@supabase/supabase-js';
 import { ArrowLeft, ClipboardList, LogOut, Radio, UserCheck } from 'lucide-react';
 import {
   DEFAULT_ONBOARDING_DOSSIER,
@@ -13,10 +12,11 @@ import {
 } from '../types/concierge';
 import { fetchClientPortalSession } from '../services/conciergeApi';
 import {
+  TeamAdminSession,
   getTeamAdminSession,
   signInTeamAdmin,
   signOutTeamAdmin,
-} from '../services/supabaseAuth';
+} from '../services/adminAuth';
 import { LiveStayUpdatesTab } from './portal/LiveStayUpdatesTab';
 import { OnboardingFormTab } from './portal/OnboardingFormTab';
 
@@ -42,8 +42,7 @@ export function ClientPortalSection({
   const [isPortalAccessRequested, setIsPortalAccessRequested] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [portalError, setPortalError] = useState('');
-  const [teamSession, setTeamSession] = useState<Session | null>(null);
-  const [teamEmail, setTeamEmail] = useState('');
+  const [teamSession, setTeamSession] = useState<TeamAdminSession | null>(null);
   const [teamPassword, setTeamPassword] = useState('');
   const [teamError, setTeamError] = useState('');
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -70,21 +69,7 @@ export function ClientPortalSection({
   }, [initialReferenceCode, initialPortalToken, teamSession]);
 
   useEffect(() => {
-    let active = true;
-    void getTeamAdminSession()
-      .then((session) => {
-        if (active) setTeamSession(session);
-      })
-      .catch((error: unknown) => {
-        if (active) {
-          setTeamError(
-            error instanceof Error ? error.message : 'Team authentication could not be checked.'
-          );
-        }
-      });
-    return () => {
-      active = false;
-    };
+    setTeamSession(getTeamAdminSession());
   }, []);
 
   useEffect(() => {
@@ -146,7 +131,7 @@ export function ClientPortalSection({
     setIsSigningIn(true);
     setTeamError('');
     try {
-      const session = await signInTeamAdmin(teamEmail.trim(), teamPassword);
+      const session = await signInTeamAdmin(teamPassword);
       setTeamSession(session);
       setTeamPassword('');
       setIsPortalAccessRequested(Boolean(referenceCode.trim()));
@@ -275,22 +260,13 @@ export function ClientPortalSection({
                   <p className="text-sm font-semibold">Team administrator sign-in</p>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <input
-                      type="email"
-                      required
-                      value={teamEmail}
-                      onChange={(event) => setTeamEmail(event.target.value)}
-                      placeholder="Team email"
-                      autoComplete="username"
-                      className="min-h-[42px] px-3 py-2 bg-[#121212] border border-white/20 rounded-sm text-sm focus:outline-none focus:border-[#C5A059]"
-                    />
-                    <input
                       type="password"
                       required
                       value={teamPassword}
                       onChange={(event) => setTeamPassword(event.target.value)}
-                      placeholder="Password"
+                      placeholder="Administrator password"
                       autoComplete="current-password"
-                      className="min-h-[42px] px-3 py-2 bg-[#121212] border border-white/20 rounded-sm text-sm focus:outline-none focus:border-[#C5A059]"
+                      className="sm:col-span-2 min-h-[42px] px-3 py-2 bg-[#121212] border border-white/20 rounded-sm text-sm focus:outline-none focus:border-[#C5A059]"
                     />
                   </div>
                   {teamError && <p role="alert" className="text-sm text-red-300">{teamError}</p>}
@@ -417,6 +393,7 @@ export function ClientPortalSection({
             updates={updates}
             billing={billing}
             teamAccessToken={teamSession?.access_token}
+            portalToken={portalToken || undefined}
             onAddUpdate={handleAddUpdate}
             onAddIncidental={handleAddIncidental}
           />
