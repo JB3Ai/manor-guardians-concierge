@@ -3,6 +3,9 @@
   "name": "manor-guardians-concierge",
   "main": "src/worker.ts",
   "compatibility_date": "2026-11-18",
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
