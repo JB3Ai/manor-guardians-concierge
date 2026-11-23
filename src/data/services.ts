@@ -10,7 +10,7 @@ export { PRICING_RATES } from './pricing';
 
 export const BRAND_NAME = 'Pretoria East Home & Pet Concierge';
 const whatsappBusinessNumber =
-  (import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER || '').replace(/\D/g, '') || '27000000000';
+  (import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER || '').replace(/\D/g, '') || '27719691848';
 export const WHATSAPP_BASE_URL = `https://wa.me/${whatsappBusinessNumber}`;
 
 export const CURATED_DAY_TRIPS = [
